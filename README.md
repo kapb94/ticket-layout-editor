@@ -1,43 +1,47 @@
-# Editor de Tickets - Generador de Layouts HTML
+# 🎫 Editor de Tickets - Generador de Layouts HTML
 
-Una aplicación web para crear layouts de tickets personalizables que se pueden convertir a PDF. Permite diseñar tickets con elementos de texto y tablas, configurar su ancho en diferentes unidades y cargar datos JSON para generar contenido dinámico.
+Un editor visual completo para crear layouts de tickets personalizables que se pueden exportar como HTML puro y convertir a PDF. Diseñado para ser intuitivo y no requerir conocimientos de programación.
 
-## Características
+## ✨ Características Principales
 
-### 🎨 Editor Visual
-- **Interfaz drag & drop** para colocar elementos
-- **Área de diseño** con dimensiones configurables
-- **Elementos redimensionables** y movibles
-- **Selección visual** de elementos
+### 🎨 **Editor Visual Intuitivo**
+- **Interfaz drag & drop** para arrastrar elementos al área de diseño
+- **Editor WYSIWYG** (What You See Is What You Get)
+- **Área de diseño personalizable** con ancho configurable en px, pulgadas o cm
+- **Vista previa en tiempo real** con iframe para renderizado completo
 
-### 📏 Configuración de Dimensiones
-- **Ancho configurable** en píxeles (px), pulgadas (in) o centímetros (cm)
-- **Conversión automática** entre unidades
-- **Vista previa** del ancho en píxeles
+### 📝 **Elementos de Diseño**
+- **Elementos de texto** con contenido dinámico usando referencias JSON
+- **Tablas dinámicas** con configuración avanzada de columnas
+- **Posicionamiento preciso** con controles X/Y y alineación
+- **Redimensionado visual** arrastrando las esquinas
 
-### 📝 Elementos Disponibles
-- **Elementos de texto**: Labels editables para información estática
-- **Tablas dinámicas**: Configurables con columnas personalizables
-- **Posicionamiento libre** en el layout
+### 🎛️ **Controles Avanzados**
+- **Posicionamiento relativo** entre elementos
+- **Controles de teclado** para movimiento y redimensionado preciso
+- **Propiedades personalizables** para cada elemento
+- **Configuración de tablas** integrada en el panel de propiedades
 
-### 📊 Configuración de Tablas
-- **Ruta de datos**: Especifica la ubicación de los datos en el JSON
-- **Columnas configurables**: Define encabezados y propiedades
-- **Mapeo dinámico**: Conecta propiedades JSON con columnas de tabla
+### 📊 **Datos Dinámicos**
+- **Carga de archivos JSON** para datos de prueba
+- **Referencias dinámicas** usando sintaxis `{{propiedad}}`
+- **Vista previa de propiedades JSON** con copia al portapapeles
+- **Formateo avanzado** de datos en tablas (moneda, fechas, números)
 
-### 📄 Generación de HTML
-- **HTML puro** sin dependencias externas
-- **CSS integrado** para estilos
-- **JavaScript embebido** para llenar datos dinámicos
-- **Descarga automática** del archivo generado
+### 💾 **Gestión de Proyectos**
+- **Exportar configuración** completa del proyecto
+- **Importar proyectos** guardados anteriormente
+- **Persistencia completa** de elementos, configuraciones y datos
+- **Control de versiones** integrado
 
-## Instalación y Uso
+## 🚀 Instalación
 
-### Requisitos
+### Prerrequisitos
 - Node.js 18+ 
 - npm o yarn
 
-### Instalación
+### Pasos de Instalación
+
 ```bash
 # Clonar el repositorio
 git clone <url-del-repositorio>
@@ -48,180 +52,367 @@ npm install
 
 # Ejecutar en modo desarrollo
 npm run dev
+
+# Abrir en el navegador
+# http://localhost:3000
 ```
 
-### Uso Básico
+### Estructura del Proyecto
+```
+ticket-editor/
+├── pages/
+│   ├── index.tsx          # Componente principal
+│   ├── _app.tsx           # Configuración de la app
+│   └── api/               # API routes (si aplica)
+├── public/
+│   ├── ejemplo-datos.json # Datos de ejemplo
+│   └── ...                # Otros archivos estáticos
+├── styles/
+│   └── globals.css        # Estilos globales
+├── package.json           # Dependencias y scripts
+└── README.md             # Este archivo
+```
 
-1. **Configurar el ancho del ticket**
-   - Selecciona la unidad (px, in, cm)
-   - Ajusta el valor según tus necesidades
+## 📖 Guía de Uso
 
-2. **Cargar datos JSON**
-   - Haz clic en "Seleccionar archivo"
-   - Elige un archivo JSON con tus datos
-   - Verifica que se cargó correctamente
+### 1. Configuración Inicial
 
-3. **Agregar elementos**
-   - Arrastra elementos desde la barra lateral
-   - Colócalos en el área de diseño
-   - Ajusta su posición y tamaño
+#### Configurar el Ancho del Ticket
+- **Seleccionar unidad**: px, pulgadas (in) o centímetros (cm)
+- **Establecer ancho**: Valor numérico en la unidad seleccionada
+- **Conversión automática**: Al cambiar unidades, los valores se convierten automáticamente
 
-4. **Configurar tablas**
-   - Haz clic en una tabla para configurarla
-   - Define la ruta de datos (ej: `productos.items`)
-   - Agrega columnas con encabezados y propiedades
+#### Cargar Datos JSON
+- **Hacer clic** en "Seleccionar archivo" en la sección "Cargar datos JSON"
+- **Seleccionar archivo** `.json` con los datos de prueba
+- **Verificar carga**: Aparecerá "✓ JSON cargado correctamente"
+- **Ver propiedades**: Hacer clic en "📋 Ver Propiedades JSON"
 
-5. **Generar HTML**
-   - Haz clic en "Generar HTML"
-   - Se descargará automáticamente el archivo
+### 2. Crear el Diseño
 
-## Estructura del JSON
+#### Agregar Elementos
+1. **Arrastrar elementos** desde la barra lateral al área de diseño:
+   - **Texto**: Para contenido de texto
+   - **Tabla**: Para datos tabulares
 
-El archivo JSON debe tener una estructura que permita acceder a los datos mediante rutas. Ejemplo:
+#### Seleccionar y Editar Elementos
+- **Hacer clic** en cualquier elemento para seleccionarlo
+- **Panel de propiedades** aparecerá automáticamente
+- **Editar propiedades** en tiempo real
 
+#### Mover Elementos
+- **Arrastrar** el elemento seleccionado
+- **Controles de teclado**:
+  - `Flechas`: Mover 5px
+  - `Shift + Flechas`: Mover 20px
+- **Controles X/Y**: En el panel de propiedades
+
+#### Redimensionar Elementos
+- **Arrastrar esquinas** del elemento
+- **Controles de teclado**:
+  - `Shift + ←/→`: Cambiar ancho
+  - `Shift + ↑/↓`: Cambiar altura
+
+### 3. Configurar Elementos
+
+#### Elementos de Texto
+- **Contenido**: Texto estático o referencias JSON `{{propiedad}}`
+- **Tamaño de fuente**: 8px a 72px
+- **Alineación**: Izquierda, centro, derecha, justificado
+- **Posicionamiento**: Coordenadas X/Y precisas
+
+#### Elementos de Tabla
+- **Ruta de datos**: Propiedad JSON que contiene el array (ej: `productos.items`)
+- **Columnas**: Configurar encabezados y propiedades
+- **Formateo avanzado**: Número, moneda, fecha, texto
+- **Estilos**: Bordes, fondo de encabezado, alineación
+
+### 4. Posicionamiento Relativo
+
+#### Configurar Relaciones
+1. **Seleccionar elemento** que será relativo
+2. **Elegir elemento de referencia** en "Relativo a"
+3. **Seleccionar posición** (arriba, abajo, izquierda, derecha, etc.)
+4. **Ajustar offset** si es necesario
+
+#### Posiciones Disponibles
+- `above`: Encima del elemento de referencia
+- `below`: Debajo del elemento de referencia
+- `left`: A la izquierda del elemento de referencia
+- `right`: A la derecha del elemento de referencia
+- `center`: Centrado respecto al elemento de referencia
+- `top-left`, `top-right`, `bottom-left`, `bottom-right`: Esquinas
+
+### 5. Vista Previa
+
+#### Activar Vista Previa
+- **Hacer clic** en "👁️ Mostrar Vista Previa"
+- **Ver resultado** en tiempo real
+- **Actualizar automáticamente** al hacer cambios
+
+#### Funciones de Vista Previa
+- **Renderizado completo** en iframe
+- **Scripts ejecutados** correctamente
+- **Datos dinámicos** poblados automáticamente
+- **Actualizar tablas** con botón dedicado
+
+### 6. Exportar Resultado
+
+#### Generar Plantilla HTML
+- **Hacer clic** en "💾 Generar Plantilla HTML"
+- **Descargar archivo** automáticamente
+- **HTML puro** con CSS y JavaScript integrados
+
+#### Exportar Proyecto
+- **Hacer clic** en "💾 Exportar Proyecto"
+- **Guardar configuración** completa
+- **Archivo JSON** con todos los datos
+
+#### Importar Proyecto
+- **Hacer clic** en "📂 Importar Proyecto"
+- **Seleccionar archivo** `.json` guardado
+- **Cargar configuración** completa
+
+## 🎛️ Controles de Teclado
+
+### Movimiento de Elementos
+| Tecla | Acción |
+|-------|--------|
+| `←` | Mover 5px a la izquierda |
+| `→` | Mover 5px a la derecha |
+| `↑` | Mover 5px hacia arriba |
+| `↓` | Mover 5px hacia abajo |
+| `Shift + ←` | Mover 20px a la izquierda |
+| `Shift + →` | Mover 20px a la derecha |
+| `Shift + ↑` | Mover 20px hacia arriba |
+| `Shift + ↓` | Mover 20px hacia abajo |
+
+### Redimensionado de Elementos
+| Tecla | Acción |
+|-------|--------|
+| `Shift + ←` | Reducir ancho 20px |
+| `Shift + →` | Aumentar ancho 20px |
+| `Shift + ↑` | Reducir altura 20px |
+| `Shift + ↓` | Aumentar altura 20px |
+
+## 📊 Estructura de Datos JSON
+
+### Formato Básico
 ```json
 {
   "empresa": {
     "nombre": "Mi Empresa S.A.",
-    "direccion": "Calle Principal 123"
+    "direccion": "Calle Principal 123",
+    "telefono": "(555) 123-4567",
+    "email": "info@miempresa.com",
+    "rfc": "ABC123456789"
   },
   "venta": {
-    "numero": "TICK-001",
-    "fecha": "2024-01-15"
+    "numero": "TICK-2024-001",
+    "fecha": "2024-01-15",
+    "hora": "14:30:25",
+    "total": 1250.75,
+    "subtotal": 1087.61,
+    "iva": 163.14,
+    "metodoPago": "Tarjeta de Crédito",
+    "cajero": "Juan Pérez"
   },
   "productos": {
     "items": [
       {
-        "codigo": "PROD-001",
-        "nombre": "Laptop HP",
-        "precio": 850.00
+        "codigo": "PROD001",
+        "nombre": "Laptop HP Pavilion",
+        "descripcion": "Laptop 15.6\" Intel i5 8GB RAM",
+        "precio": 899.99,
+        "cantidad": 1,
+        "subtotal": 899.99,
+        "categoria": "Electrónicos"
       }
-    ]
+    ],
+    "totalItems": 5
   }
 }
 ```
 
-### Rutas de Datos
-- `empresa.nombre` → "Mi Empresa S.A."
-- `productos.items` → Array de productos
-- `venta.numero` → "TICK-001"
+### Referencias Dinámicas
+Usar sintaxis `{{propiedad}}` en elementos de texto:
+- `{{empresa.nombre}}` → "Mi Empresa S.A."
+- `{{venta.total}}` → 1250.75
+- `{{productos.totalItems}}` → 5
 
-## Funcionalidades Avanzadas
+## 🎨 Configuración de Tablas
 
-### Redimensionamiento de Elementos
-- **Esquina inferior derecha**: Arrastra para redimensionar
-- **Mínimo 50px de ancho** y 30px de alto
-- **Proporción libre** mantenida
-
-### Movimiento de Elementos
-- **Arrastra elementos** para moverlos
-- **Posicionamiento preciso** en píxeles
-- **Selección visual** con borde azul
-
-### Configuración de Tablas
-- **Ruta de datos**: Especifica dónde están los datos
-- **Columnas dinámicas**: Agrega/elimina según necesites
-- **Mapeo de propiedades**: Conecta JSON con columnas
-
-## Archivo HTML Generado
-
-El HTML generado incluye:
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        /* Estilos CSS integrados */
-        .ticket { width: 300px; /* Ancho configurado */ }
-        .element { position: absolute; /* Posicionamiento */ }
-        .table { /* Estilos de tabla */ }
-    </style>
-</head>
-<body>
-    <div class="ticket">
-        <!-- Elementos posicionados -->
-    </div>
-    <script>
-        // Datos JSON embebidos
-        const data = { /* tus datos */ };
-        
-        // JavaScript para llenar tablas
-        // Función getValueByPath para acceder a datos
-    </script>
-</body>
-</html>
-```
-
-## Conversión a PDF
-
-Para convertir el HTML generado a PDF, puedes usar:
-
-### Opciones Recomendadas
-1. **Puppeteer**: Automatización con Node.js
-2. **wkhtmltopdf**: Herramienta de línea de comandos
-3. **Servicios web**: APIs como PDFShift, DocRaptor
-4. **Navegador**: Imprimir como PDF
-
-### Ejemplo con Puppeteer
-```javascript
-const puppeteer = require('puppeteer');
-
-async function htmlToPDF(htmlPath, pdfPath) {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(`file://${htmlPath}`);
-  await page.pdf({ path: pdfPath, format: 'A4' });
-  await browser.close();
+### Propiedades de Columna
+```typescript
+interface TableColumn {
+  header: string;           // Encabezado de la columna
+  property: string;         // Propiedad JSON a mostrar
+  textAlign?: 'left' | 'center' | 'right'; // Alineación
+  bold?: boolean;           // Texto en negrita
+  italic?: boolean;         // Texto en cursiva
+  format?: 'text' | 'number' | 'currency' | 'percentage' | 'date' | 'datetime' | 'uppercase' | 'lowercase' | 'capitalize' | 'custom';
+  formatOptions?: {
+    currency?: 'USD' | 'MXN' | 'EUR';
+    decimals?: number;
+    thousandsSeparator?: boolean;
+    dateFormat?: string;
+    customFormat?: string;
+    defaultValue?: string;
+    transform?: 'truncate' | 'wrap' | 'ellipsis';
+    maxLength?: number;
+  };
 }
 ```
 
-## Personalización
+### Formatos Disponibles
+- **text**: Texto plano
+- **number**: Números con decimales configurables
+- **currency**: Moneda con símbolo y separadores
+- **percentage**: Porcentajes
+- **date**: Fechas con formato personalizable
+- **datetime**: Fecha y hora
+- **uppercase**: Texto en mayúsculas
+- **lowercase**: Texto en minúsculas
+- **capitalize**: Primera letra en mayúscula
+- **custom**: Formato personalizado
 
-### Estilos CSS
-Los estilos se generan automáticamente, pero puedes modificar:
-- **Fuentes**: Cambia `font-family` en `.ticket`
-- **Colores**: Ajusta `background-color` y `border`
-- **Espaciado**: Modifica `padding` y `margin`
+## 📁 Estructura del Proyecto Exportado
 
-### JavaScript
-El código JavaScript generado incluye:
-- **Función getValueByPath**: Para acceder a datos anidados
-- **Llenado automático de tablas**: Basado en configuración
-- **Manejo de errores**: Para datos faltantes
+### Archivo de Configuración
+```json
+{
+  "version": "1.0.0",
+  "name": "Ticket Editor Project",
+  "description": "Proyecto de editor de tickets exportado",
+  "createdAt": "2024-01-20T10:30:00.000Z",
+  "updatedAt": "2024-01-20T15:45:00.000Z",
+  "ticketWidth": 300,
+  "widthUnit": "px",
+  "elements": [
+    {
+      "id": "text-1",
+      "type": "text",
+      "x": 50,
+      "y": 50,
+      "width": 200,
+      "height": 30,
+      "content": "{{empresa.nombre}}",
+      "fontSize": 14,
+      "textAlign": "left"
+    }
+  ],
+  "jsonData": {
+    "empresa": {
+      "nombre": "Mi Empresa S.A."
+    }
+  }
+}
+```
 
-## Solución de Problemas
+### HTML Generado
+El HTML generado incluye:
+- **CSS inline** para estilos
+- **JavaScript integrado** para procesar datos
+- **Función `processTicketTemplate`** para poblar datos
+- **Función `fillTable`** para tablas dinámicas
+- **Función `getValueByPath`** para acceder a propiedades anidadas
 
-### Elementos no se mueven
-- Asegúrate de hacer clic en el elemento (no en el input)
-- Verifica que el elemento esté seleccionado (borde azul)
+## 🔧 Configuración Avanzada
 
-### Tablas no se llenan
-- Revisa la ruta de datos en la configuración
-- Verifica que el JSON tenga la estructura correcta
-- Comprueba que las propiedades coincidan
+### Conversión de Unidades
+- **1 pulgada = 96px**
+- **1 cm = 37.795px**
+- **Conversión automática** al cambiar unidades
 
-### HTML no se genera
-- Asegúrate de tener elementos en el diseño
-- Verifica que el navegador permita descargas
-- Revisa la consola para errores
+### Límites del Sistema
+- **Ancho mínimo**: 50px
+- **Ancho máximo**: 1000px
+- **Tamaño mínimo de elementos**: 30px
+- **Tamaño máximo de elementos**: 800px ancho, 600px alto
 
-## Contribuir
+### Posicionamiento
+- **Coordenadas**: Sistema de coordenadas X/Y
+- **Límites**: Elementos siempre dentro del canvas
+- **Relativo**: Posicionamiento respecto a otros elementos
+- **Offset**: Desplazamiento desde posición relativa
 
-1. Fork el proyecto
-2. Crea una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Abre un Pull Request
+## 🐛 Solución de Problemas
 
-## Licencia
+### Problemas Comunes
+
+#### Vista Previa No Muestra Datos
+1. **Verificar JSON cargado**: Asegurar que hay datos válidos
+2. **Revisar rutas de propiedades**: Confirmar que las rutas existen
+3. **Actualizar tablas**: Hacer clic en "🔄 Actualizar Tablas"
+4. **Verificar consola**: Revisar logs del iframe
+
+#### Elementos No Se Mueven
+1. **Verificar selección**: Elemento debe estar seleccionado
+2. **Revisar límites**: Elemento puede estar en el borde
+3. **Comprobar teclado**: Asegurar que el foco está en el canvas
+
+#### Tablas No Se Renderizan
+1. **Verificar ruta de datos**: Confirmar que `dataPath` es correcta
+2. **Revisar columnas**: Asegurar que las propiedades existen
+3. **Actualizar vista previa**: Forzar actualización del iframe
+
+#### Error al Exportar
+1. **Verificar permisos**: Asegurar permisos de escritura
+2. **Revisar navegador**: Algunos navegadores bloquean descargas
+3. **Comprobar elementos**: Asegurar que hay elementos en el diseño
+
+### Logs de Depuración
+- **Consola del navegador**: Para errores generales
+- **Consola del iframe**: Para errores de vista previa
+- **Logs de tablas**: Para problemas de renderizado de datos
+
+## 🤝 Contribución
+
+### Desarrollo Local
+```bash
+# Clonar repositorio
+git clone <url-del-repositorio>
+cd ticket-editor
+
+# Instalar dependencias
+npm install
+
+# Ejecutar en desarrollo
+npm run dev
+
+# Construir para producción
+npm run build
+```
+
+### Estructura de Código
+- **Componente principal**: `pages/index.tsx`
+- **Interfaces**: Definidas al inicio del archivo
+- **Funciones de utilidad**: Agrupadas por funcionalidad
+- **Estados**: Gestionados con React hooks
+
+### Convenciones
+- **TypeScript**: Tipado estricto para todas las funciones
+- **Tailwind CSS**: Clases utilitarias para estilos
+- **React Hooks**: useState, useEffect, useRef
+- **Eventos**: Manejo consistente de eventos del DOM
+
+## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-## Soporte
+## 🆘 Soporte
 
+### Recursos Adicionales
+- **Documentación**: Este README
+- **Ejemplos**: Archivo `public/ejemplo-datos.json`
+- **Plantilla de uso**: Generada con "📚 Ejemplo de uso"
+
+### Contacto
 Para soporte técnico o preguntas:
-- Abre un issue en GitHub
-- Revisa la documentación
-- Consulta los ejemplos incluidos
+- **Issues**: Crear un issue en el repositorio
+- **Documentación**: Revisar este README
+- **Ejemplos**: Usar los archivos de ejemplo incluidos
+
+---
+
+**🎫 Editor de Tickets** - Crea layouts profesionales de tickets sin programación
