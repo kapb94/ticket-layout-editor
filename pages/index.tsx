@@ -1650,14 +1650,14 @@ export default function TicketEditor() {
         
         // ===== DATOS DE EJEMPLO (OPCIONAL) =====
                  // Descomenta las siguientes líneas para usar datos de ejemplo:
-         /*
-         const datosEjemplo = ${JSON.stringify(defaultJsonData)};
+         
+         const datosEjemplo = $$JSON$$;
          document.addEventListener('DOMContentLoaded', function() {
              processTicketTemplate(datosEjemplo);
              // Ajustar posiciones después de procesar la plantilla
              setTimeout(adjustRelativePositions, 200);
          });
-         */
+         
     </script>
 </body>
 </html>`;
