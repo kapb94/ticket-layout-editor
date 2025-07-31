@@ -80,6 +80,7 @@ export default function TicketEditor() {
   const [showJsonViewer, setShowJsonViewer] = useState(false);
   const [relativeMode, setRelativeMode] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [hasCustomJson, setHasCustomJson] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Datos JSON por defecto (hardcodeados)
@@ -167,7 +168,7 @@ export default function TicketEditor() {
   // Actualizar posiciones relativas cuando cambien los elementos
   useEffect(() => {
     updateRelativePositions();
-  }, [elements.length]); // Se ejecuta cuando cambia el número de elementos
+  }, [elements]); // Se ejecuta cuando cambian los elementos (posiciones, tamaños, etc.)
 
   // Manejar movimiento y redimensionado con teclado
   useEffect(() => {
@@ -377,11 +378,21 @@ export default function TicketEditor() {
           };
         }
         
+        // En modo relativo, usar posiciones temporales y dejar que el useEffect calcule las posiciones finales
+        let finalX = x;
+        let finalY = y;
+        
+        if (relativeMode && elements.length > 0) {
+          // Usar posiciones temporales, el useEffect se encargará de posicionar correctamente
+          finalX = 0;
+          finalY = 0;
+        }
+        
         const newElement: TicketElement = {
           id: `element-${Date.now()}`,
           type,
-          x: relativeMode && elements.length > 0 ? 0 : x, // En modo relativo, la posición se calcula automáticamente
-          y: relativeMode && elements.length > 0 ? 0 : y,
+          x: finalX,
+          y: finalY,
           width: type === 'text' ? 150 : 200,
           height: type === 'text' ? 30 : 100,
           content: type === 'text' ? 'Texto de ejemplo' : '',
@@ -539,6 +550,7 @@ export default function TicketEditor() {
         try {
           const data = JSON.parse(event.target?.result as string);
           setJsonData(data);
+          setHasCustomJson(true);
         } catch (error) {
           alert('Error al cargar el archivo JSON');
         }
@@ -548,9 +560,18 @@ export default function TicketEditor() {
   };
 
   const updateElement = (id: string, updates: Partial<TicketElement>) => {
-    setElements(elements.map(el => 
+    const updatedElements = elements.map(el => 
       el.id === id ? { ...el, ...updates } : el
-    ));
+    );
+    setElements(updatedElements);
+    
+    // Si se actualizó la posición o tamaño de un elemento, actualizar posiciones relativas
+    if (updates.x !== undefined || updates.y !== undefined || updates.width !== undefined || updates.height !== undefined) {
+      // Usar setTimeout para asegurar que el estado se actualice primero
+      setTimeout(() => {
+        updateRelativePositions();
+      }, 0);
+    }
   };
 
   const deleteElement = (id: string) => {
@@ -826,9 +847,25 @@ export default function TicketEditor() {
     return Math.max(contentHeight, 200); // Mínimo 200px
   };
 
+  // Función auxiliar para obtener elementos con posiciones relativas calculadas
+  const getElementsWithRelativePositions = () => {
+    return elements.map(element => {
+      if (element.relativeTo && element.relativePosition) {
+        const calculatedPosition = calculateRelativePosition(element);
+        return { ...element, x: calculatedPosition.x, y: calculatedPosition.y };
+      }
+      return element;
+    });
+  };
+
+
+
   const generatePreviewHTML = () => {
     const widthPx = convertWidth(ticketWidth, widthUnit);
     const contentHeight = calculateContentHeight();
+    const elementsWithRelativePositions = getElementsWithRelativePositions();
+    
+
     
     let html = `<!DOCTYPE html>
 <html>
@@ -848,7 +885,7 @@ export default function TicketEditor() {
             background: white;
             margin: 0 auto;
             min-height: ${contentHeight}px;
-            padding: 20px;
+            padding: 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .element {
@@ -896,14 +933,15 @@ export default function TicketEditor() {
 <body>
     <div class="ticket">`;
 
-    elements.forEach(element => {
-      const style = `left: ${element.x}px; top: ${element.y}px; width: ${element.width}px; height: ${element.height}px;`;
+    elementsWithRelativePositions.forEach(element => {
+      const heightStyle = element.type === 'table' ? `min-height: ${element.height}px; height: auto;` : `height: ${element.height}px;`;
+      const style = `left: ${element.x}px; top: ${element.y}px; width: ${element.width}px; ${heightStyle}`;
       const fontSize = element.fontSize || (element.type === 'text' ? 14 : 12);
       
       if (element.type === 'text') {
         const processedContent = replaceJsonReferences(element.content, currentJsonData);
         html += `
-        <div class="element text-element" style="${style} font-size: ${fontSize}px; color: #000000; position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; text-align: ${element.textAlign || 'left'}; display: flex; align-items: center; justify-content: ${element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : element.textAlign === 'justify' ? 'stretch' : 'flex-start'};">${processedContent}</div>`;
+        <div class="element text-element" data-element-id="${element.id}" style="${style} font-size: ${fontSize}px; color: #000000; position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; text-align: ${element.textAlign || 'left'}; display: flex; align-items: center; justify-content: ${element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : element.textAlign === 'justify' ? 'stretch' : 'flex-start'};">${processedContent}</div>`;
       } else if (element.type === 'table') {
         const tableFontSize = element.config?.fontSize || 12;
         const showBorders = element.config?.showBorders !== false;
@@ -911,7 +949,7 @@ export default function TicketEditor() {
         const showHeaderBackground = element.config?.showHeaderBackground !== false;
         const tableClass = showBorders ? 'table' : 'table no-borders';
         html += `
-        <div class="element" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; min-height: 30px;">
+        <div class="element" data-element-id="${element.id}" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; min-height: 30px; height: auto;">
             <table class="${tableClass}" style="font-size: ${tableFontSize}px; color: #000000; border-collapse: collapse; width: 100%; background: transparent;">`;
         if (element.config?.columns?.length > 0) {
           if (showHeader) {
@@ -1119,16 +1157,97 @@ export default function TicketEditor() {
             }).join('\n            ')}
         }
         
+        // Función para ajustar posiciones relativas después de que las tablas se llenen
+        function adjustRelativePositions() {
+            console.log('Ajustando posiciones relativas...');
+            
+            // Obtener todos los elementos con posiciones relativas
+            const relativeElements = ${JSON.stringify(elements.filter(el => el.relativeTo && el.relativePosition))};
+            
+            relativeElements.forEach(element => {
+                const elementEl = document.querySelector(\`[data-element-id="\${element.id}"]\`);
+                if (!elementEl) return;
+                
+                const referenceEl = document.querySelector(\`[data-element-id="\${element.relativeTo}"]\`);
+                if (!referenceEl) return;
+                
+                // Obtener las dimensiones reales del elemento de referencia
+                const referenceRect = referenceEl.getBoundingClientRect();
+                const ticketRect = document.querySelector('.ticket').getBoundingClientRect();
+                
+                // Calcular posición relativa basada en las dimensiones reales
+                const offset = element.relativeOffset || { x: 0, y: 0 };
+                let newX = referenceRect.left - ticketRect.left;
+                let newY = referenceRect.top - ticketRect.top;
+                
+                switch (element.relativePosition) {
+                    case 'below':
+                        newY = referenceRect.bottom - ticketRect.top + offset.y;
+                        newX = referenceRect.left - ticketRect.left + offset.x;
+                        break;
+                    case 'above':
+                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                        newX = referenceRect.left - ticketRect.left + offset.x;
+                        break;
+                    case 'left':
+                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                        newY = referenceRect.top - ticketRect.top + offset.y;
+                        break;
+                    case 'right':
+                        newX = referenceRect.right - ticketRect.left + offset.x;
+                        newY = referenceRect.top - ticketRect.top + offset.y;
+                        break;
+                    case 'bottom-right':
+                        newX = referenceRect.right - ticketRect.left + offset.x;
+                        newY = referenceRect.bottom - ticketRect.top + offset.y;
+                        break;
+                    case 'bottom-left':
+                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                        newY = referenceRect.bottom - ticketRect.top + offset.y;
+                        break;
+                    case 'top-right':
+                        newX = referenceRect.right - ticketRect.left + offset.x;
+                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                        break;
+                    case 'top-left':
+                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                        break;
+                    case 'center':
+                        newX = referenceRect.left - ticketRect.left + (referenceRect.width - elementEl.offsetWidth) / 2 + offset.x;
+                        newY = referenceRect.top - ticketRect.top + (referenceRect.height - elementEl.offsetHeight) / 2 + offset.y;
+                        break;
+                }
+                
+                // Aplicar la nueva posición
+                elementEl.style.left = newX + 'px';
+                elementEl.style.top = newY + 'px';
+                
+                console.log('Elemento', element.id, 'reposicionado a:', newX, newY);
+            });
+        }
+        
         // Ejecutar inmediatamente y también cuando el DOM esté listo
         console.log('Script de vista previa cargado');
         processAllTables();
         
+        // Ajustar posiciones después de que las tablas se llenen
+        setTimeout(() => {
+            adjustRelativePositions();
+        }, 200);
+        
         // También ejecutar cuando el DOM esté listo por si acaso
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', processAllTables);
+            document.addEventListener('DOMContentLoaded', () => {
+                processAllTables();
+                setTimeout(adjustRelativePositions, 200);
+            });
         } else {
             // DOM ya está listo, ejecutar inmediatamente
-            setTimeout(processAllTables, 100);
+            setTimeout(() => {
+                processAllTables();
+                setTimeout(adjustRelativePositions, 200);
+            }, 100);
         }
     </script>`;
 
@@ -1138,6 +1257,7 @@ export default function TicketEditor() {
   const generateHTML = () => {
     const widthPx = convertWidth(ticketWidth, widthUnit);
     const contentHeight = calculateContentHeight();
+    const elementsWithRelativePositions = getElementsWithRelativePositions();
     
     let html = `<!DOCTYPE html>
 <html>
@@ -1156,7 +1276,7 @@ export default function TicketEditor() {
             background: white;
             margin: 0 auto;
             min-height: ${contentHeight}px;
-            padding: 20px;
+            padding: 0;
         }
         .element {
             position: absolute;
@@ -1200,21 +1320,22 @@ export default function TicketEditor() {
 <body>
     <div class="ticket">`;
 
-    elements.forEach(element => {
-      const style = `left: ${element.x}px; top: ${element.y}px; width: ${element.width}px; height: ${element.height}px;`;
+    elementsWithRelativePositions.forEach(element => {
+      const heightStyle = element.type === 'table' ? `min-height: ${element.height}px; height: auto;` : `height: ${element.height}px;`;
+      const style = `left: ${element.x}px; top: ${element.y}px; width: ${element.width}px; ${heightStyle}`;
       const fontSize = element.fontSize || (element.type === 'text' ? 14 : 12);
       
       if (element.type === 'text') {
         // Mantener los placeholders originales en lugar de procesarlos
         const templateContent = element.content;
-        html += `\n        <div class="element text-element" style="${style} font-size: ${fontSize}px; color: #000000; text-align: ${element.textAlign || 'left'}; display: flex; align-items: center; justify-content: ${element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : element.textAlign === 'justify' ? 'stretch' : 'flex-start'}; border: none;">${templateContent}</div>`;
+        html += `\n        <div class="element text-element" data-element-id="${element.id}" style="${style} font-size: ${fontSize}px; color: #000000; text-align: ${element.textAlign || 'left'}; display: flex; align-items: center; justify-content: ${element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : element.textAlign === 'justify' ? 'stretch' : 'flex-start'}; border: none;">${templateContent}</div>`;
       } else if (element.type === 'table') {
         const tableFontSize = element.config?.fontSize || 12;
         const showBorders = element.config?.showBorders !== false;
         const showHeader = element.config?.showHeader !== false;
         const showHeaderBackground = element.config?.showHeaderBackground !== false;
         const tableClass = showBorders ? 'table' : 'table no-borders';
-        html += `\n        <div class="element table-element" style="${style}">`;
+        html += `\n        <div class="element table-element" data-element-id="${element.id}" style="${style} min-height: 30px; height: auto;">`;
         html += `\n            <table class="${tableClass}" style="font-size: ${tableFontSize}px; color: #000000; background: transparent;">`;
         if (element.config?.columns?.length > 0) {
           if (showHeader) {
@@ -1438,6 +1559,9 @@ export default function TicketEditor() {
               }
               return '';
             }).join('\n            ')}
+            
+            // Ajustar posiciones relativas después de que las tablas se llenen
+            setTimeout(adjustRelativePositions, 200);
         }
         
         // ===== INSTRUCCIONES DE USO =====
@@ -1453,12 +1577,85 @@ export default function TicketEditor() {
         // ticketData = datos;
         // processTicketTemplate(ticketData);
         
+        // ===== AJUSTE DE POSICIONES RELATIVAS =====
+        // Función para ajustar posiciones relativas después de que las tablas se llenen
+        function adjustRelativePositions() {
+            console.log('Ajustando posiciones relativas en HTML generado...');
+            
+            // Obtener todos los elementos con posiciones relativas
+            const relativeElements = ${JSON.stringify(elements.filter(el => el.relativeTo && el.relativePosition))};
+            
+            relativeElements.forEach(element => {
+                const elementEl = document.querySelector(\`[data-element-id="\${element.id}"]\`);
+                if (!elementEl) return;
+                
+                const referenceEl = document.querySelector(\`[data-element-id="\${element.relativeTo}"]\`);
+                if (!referenceEl) return;
+                
+                // Obtener las dimensiones reales del elemento de referencia
+                const referenceRect = referenceEl.getBoundingClientRect();
+                const ticketRect = document.querySelector('.ticket').getBoundingClientRect();
+                
+                // Calcular posición relativa basada en las dimensiones reales
+                const offset = element.relativeOffset || { x: 0, y: 0 };
+                let newX = referenceRect.left - ticketRect.left;
+                let newY = referenceRect.top - ticketRect.top;
+                
+                switch (element.relativePosition) {
+                    case 'below':
+                        newY = referenceRect.bottom - ticketRect.top + offset.y;
+                        newX = referenceRect.left - ticketRect.left + offset.x;
+                        break;
+                    case 'above':
+                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                        newX = referenceRect.left - ticketRect.left + offset.x;
+                        break;
+                    case 'left':
+                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                        newY = referenceRect.top - ticketRect.top + offset.y;
+                        break;
+                    case 'right':
+                        newX = referenceRect.right - ticketRect.left + offset.x;
+                        newY = referenceRect.top - ticketRect.top + offset.y;
+                        break;
+                    case 'bottom-right':
+                        newX = referenceRect.right - ticketRect.left + offset.x;
+                        newY = referenceRect.bottom - ticketRect.top + offset.y;
+                        break;
+                    case 'bottom-left':
+                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                        newY = referenceRect.bottom - ticketRect.top + offset.y;
+                        break;
+                    case 'top-right':
+                        newX = referenceRect.right - ticketRect.left + offset.x;
+                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                        break;
+                    case 'top-left':
+                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                        break;
+                    case 'center':
+                        newX = referenceRect.left - ticketRect.left + (referenceRect.width - elementEl.offsetWidth) / 2 + offset.x;
+                        newY = referenceRect.top - ticketRect.top + (referenceRect.height - elementEl.offsetHeight) / 2 + offset.y;
+                        break;
+                }
+                
+                // Aplicar la nueva posición
+                elementEl.style.left = newX + 'px';
+                elementEl.style.top = newY + 'px';
+                
+                console.log('Elemento', element.id, 'reposicionado a:', newX, newY);
+            });
+        }
+        
         // ===== DATOS DE EJEMPLO (OPCIONAL) =====
                  // Descomenta las siguientes líneas para usar datos de ejemplo:
          /*
          const datosEjemplo = ${JSON.stringify(defaultJsonData)};
          document.addEventListener('DOMContentLoaded', function() {
              processTicketTemplate(datosEjemplo);
+             // Ajustar posiciones después de procesar la plantilla
+             setTimeout(adjustRelativePositions, 200);
          });
          */
     </script>
@@ -1481,6 +1678,7 @@ export default function TicketEditor() {
     setShowProperties(false);
     setShowPreview(false);
     setShowJsonViewer(false);
+    setHasCustomJson(false);
   };
 
   const calculateRelativePosition = (element: TicketElement): { x: number; y: number } => {
@@ -1540,14 +1738,23 @@ export default function TicketEditor() {
   };
 
   const updateRelativePositions = () => {
+    let hasChanges = false;
     const updatedElements = elements.map(element => {
       if (element.relativeTo && element.relativePosition) {
         const newPosition = calculateRelativePosition(element);
-        return { ...element, x: newPosition.x, y: newPosition.y };
+        // Solo actualizar si la posición realmente cambió
+        if (Math.abs(newPosition.x - element.x) > 0.1 || Math.abs(newPosition.y - element.y) > 0.1) {
+          hasChanges = true;
+          return { ...element, x: newPosition.x, y: newPosition.y };
+        }
       }
       return element;
     });
-    setElements(updatedElements);
+    
+    // Solo actualizar el estado si hubo cambios reales
+    if (hasChanges) {
+      setElements(updatedElements);
+    }
   };
 
   const generateExampleUsage = () => {
@@ -1876,6 +2083,7 @@ processTicketTemplate(datos);
         setWidthUnit(projectConfig.widthUnit || 'px');
         setElements(projectConfig.elements || []);
         setJsonData(projectConfig.jsonData || null);
+        setHasCustomJson(!!projectConfig.jsonData); // Establecer si hay JSON personalizado
         setSelectedElement(null);
         setShowProperties(false);
 
@@ -1886,6 +2094,37 @@ processTicketTemplate(datos);
       }
     };
     reader.readAsText(file);
+  };
+
+  // Funciones para drag and drop de archivos JSON
+  const handleJsonDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleJsonDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = Array.from(e.dataTransfer.files);
+    const jsonFile = files.find(file => file.type === 'application/json' || file.name.endsWith('.json'));
+    
+    if (jsonFile) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const jsonData = JSON.parse(event.target?.result as string);
+          setJsonData(jsonData);
+          setHasCustomJson(true);
+        } catch (error) {
+          console.error('Error al cargar el archivo JSON:', error);
+          alert('❌ Error al cargar el archivo JSON. Verifica que el archivo sea válido.');
+        }
+      };
+      reader.readAsText(jsonFile);
+    } else {
+      alert('❌ Por favor, arrastra un archivo JSON válido.');
+    }
   };
 
   return (
@@ -1945,38 +2184,80 @@ processTicketTemplate(datos);
           {/* Carga de JSON */}
           <div className="mb-6">
             <label className="block text-sm font-medium mb-2 text-black">Cargar datos JSON:</label>
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleJsonUpload}
-              className="w-full px-3 py-2 border rounded text-black"
-            />
-            {currentJsonData && (
-              <div className="mt-2 space-y-2">
-                <div className="text-sm text-green-600">
-                  ✓ JSON cargado correctamente
+            
+            {/* Selector de archivo personalizado */}
+            <div className="relative">
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleJsonUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                id="json-file-input"
+              />
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 cursor-pointer group"
+                onDragOver={handleJsonDragOver}
+                onDrop={handleJsonDrop}
+              >
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
+                      Seleccionar archivo JSON
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Arrastra aquí o haz clic para buscar
+                    </p>
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Estado del archivo cargado */}
+            {hasCustomJson && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center space-x-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-green-700 font-medium">JSON cargado correctamente</span>
+                </div>
+                
                 <button
                   onClick={() => setShowJsonViewer(!showJsonViewer)}
-                  className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
+                  className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-2 ${
                     showJsonViewer 
-                      ? 'bg-orange-600 text-white hover:bg-orange-700' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                      ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-md' 
+                      : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
                   }`}
                 >
-                  {showJsonViewer ? '📋 Ocultar Propiedades' : '📋 Ver Propiedades JSON'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>{showJsonViewer ? 'Ocultar Propiedades' : 'Ver Propiedades JSON'}</span>
                 </button>
               </div>
             )}
-            <div className="mt-2">
+
+            {/* Enlace de ejemplo */}
+            <div className="mt-3">
               <a 
                 href="/ejemplo-datos.json" 
                 download
-                className="text-blue-600 text-sm hover:underline"
+                className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group"
               >
-                📥 Descargar ejemplo JSON
-          </a>
-        </div>
+                <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Descargar ejemplo JSON</span>
+              </a>
+            </div>
           </div>
 
           {/* Herramientas de posicionamiento */}
@@ -1984,17 +2265,32 @@ processTicketTemplate(datos);
             <h3 className="text-sm font-medium mb-2 text-black">Posicionamiento:</h3>
             <button
               onClick={() => setRelativeMode(!relativeMode)}
-              className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
+              className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                 relativeMode 
-                  ? 'bg-green-600 text-white hover:bg-green-700' 
-                  : 'bg-gray-600 text-white hover:bg-gray-700'
+                  ? 'bg-green-500 text-white hover:bg-green-600 shadow-md' 
+                  : 'bg-gray-500 text-white hover:bg-gray-600 shadow-md'
               }`}
             >
               {relativeMode ? '✓ Modo Relativo Activo' : '🔗 Activar Posicionamiento Relativo'}
             </button>
             {relativeMode && (
-              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-                💡 <strong>Modo relativo activo:</strong> Los nuevos elementos se posicionarán automáticamente en relación a otros elementos.
+              <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800">
+                <div className="flex items-start space-x-2">
+                  <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium mb-1">Modo relativo activo</p>
+                    <ul className="space-y-1 text-green-700">
+                      <li>• Los nuevos elementos se posicionan automáticamente</li>
+                      <li>• Se colocan debajo del último elemento</li>
+                      <li>• Mover un elemento actualiza los relacionados</li>
+                      <li>• Configurar relaciones en las propiedades</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
           </div>
