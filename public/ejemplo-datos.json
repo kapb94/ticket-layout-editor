@@ -1,0 +1,42 @@
+{
+  "empresa": {
+    "nombre": "Mi Empresa S.A.",
+    "direccion": "Calle Principal 123",
+    "telefono": "555-0123"
+  },
+  "venta": {
+    "numero": "TICK-001",
+    "fecha": "2024-01-15",
+    "cliente": "Juan Pérez",
+    "total": 1250.50
+  },
+  "productos": {
+    "items": [
+      {
+        "codigo": "PROD-001",
+        "nombre": "Laptop HP",
+        "cantidad": 1,
+        "precio": 850.00,
+        "subtotal": 850.00
+      },
+      {
+        "codigo": "PROD-002",
+        "nombre": "Mouse Inalámbrico",
+        "cantidad": 2,
+        "precio": 25.00,
+        "subtotal": 50.00
+      },
+      {
+        "codigo": "PROD-003",
+        "nombre": "Teclado Mecánico",
+        "cantidad": 1,
+        "precio": 350.50,
+        "subtotal": 350.50
+      }
+    ]
+  },
+  "empleado": {
+    "nombre": "María García",
+    "codigo": "EMP-001"
+  }
+} 
