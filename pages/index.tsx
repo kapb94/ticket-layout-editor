@@ -50,7 +50,8 @@ import {
   FolderOpen,
   RefreshCw,
   ClipboardList,
-  Bug
+  Bug,
+  Settings2
 } from 'lucide-react';
 
 interface TicketElement {
@@ -140,6 +141,15 @@ export default function TicketEditor() {
   const [isDraggingColumn, setIsDraggingColumn] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const canvasRef = useRef<HTMLDivElement>(null);
+
+  // Nuevos estados para el popup de inicio y gestión de proyectos
+  const [showStartupModal, setShowStartupModal] = useState(true);
+  const [projectName, setProjectName] = useState('Mi Proyecto de Ticket');
+  const [showProjectNameModal, setShowProjectNameModal] = useState(false);
+  const [showImportSuccessModal, setShowImportSuccessModal] = useState(false);
+  const [importedProjectInfo, setImportedProjectInfo] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const projectFileInputRef = useRef<HTMLInputElement>(null);
 
   // Datos JSON por defecto (hardcodeados)
   const defaultJsonData = {
@@ -2493,13 +2503,9 @@ export default function TicketEditor() {
 </html>`;
 
     // Crear y descargar el archivo
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ticket-template.html';
-    a.click();
-    URL.revokeObjectURL(url);
+    const safeProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${safeProjectName}-template.html`;
+    triggerFileDownload(html, filename, 'text/html');
   };
 
   const clearCanvas = () => {
@@ -2964,20 +2970,16 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 </html>`;
 
     // Crear y descargar el archivo de ejemplo
-    const blob = new Blob([exampleHTML], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ejemplo-uso-plantilla.html';
-    a.click();
-    URL.revokeObjectURL(url);
+    const safeProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${safeProjectName}-ejemplo-uso.html`;
+    triggerFileDownload(exampleHTML, filename, 'text/html');
   };
 
   // Función para exportar la configuración del proyecto
   const exportProjectConfig = () => {
     const projectConfig: ProjectConfig = {
       version: "1.0.0",
-      name: "Ticket Editor Project",
+      name: projectName,
       description: "Proyecto de editor de tickets exportado",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -2988,13 +2990,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
     };
 
     const configJson = JSON.stringify(projectConfig, null, 2);
-    const blob = new Blob([configJson], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ticket-editor-project-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const safeProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${safeProjectName}-${new Date().toISOString().split('T')[0]}.json`;
+    triggerFileDownload(configJson, filename, 'application/json');
   };
 
   // Función para importar la configuración del proyecto
@@ -3015,6 +3013,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         }
 
         // Cargar la configuración
+        setProjectName(projectConfig.name || 'Mi Proyecto de Ticket');
         setTicketWidth(projectConfig.ticketWidth || 300);
         setWidthUnit(projectConfig.widthUnit || 'px');
         setElements(projectConfig.elements || []);
@@ -3023,7 +3022,15 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         setSelectedElement(null);
         setShowProperties(false);
 
-        alert(`✅ Proyecto cargado exitosamente!\n\n📋 Información del proyecto:\n• Nombre: ${projectConfig.name}\n• Versión: ${projectConfig.version}\n• Elementos: ${projectConfig.elements.length}\n• Creado: ${new Date(projectConfig.createdAt).toLocaleString()}`);
+        // Mostrar modal de confirmación
+        setImportedProjectInfo({
+          name: projectConfig.name,
+          version: projectConfig.version,
+          elements: projectConfig.elements.length,
+          createdAt: projectConfig.createdAt,
+          updatedAt: projectConfig.updatedAt
+        });
+        setShowImportSuccessModal(true);
       } catch (error) {
         console.error('Error al cargar la configuración:', error);
         alert('❌ Error al cargar la configuración. Verifica que el archivo sea válido.');
@@ -3134,11 +3141,174 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
     }
   };
 
+  // Funciones para el popup de inicio y gestión de proyectos
+  const handleNewProject = () => {
+    setShowStartupModal(false);
+    setShowProjectNameModal(true);
+  };
+
+  const handleLoadProject = () => {
+    setShowStartupModal(false);
+    projectFileInputRef.current?.click();
+  };
+
+  const handleProjectNameSubmit = () => {
+    if (projectName.trim()) {
+      setShowProjectNameModal(false);
+    }
+  };
+
+  const handleProjectNameCancel = () => {
+    setProjectName('Mi Proyecto de Ticket');
+    setShowProjectNameModal(false);
+  };
+
+  const triggerFileDownload = (content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Head>
         <title>Editor de Tickets</title>
       </Head>
+
+      {/* Modales de inicio y gestión de proyectos */}
+      {showStartupModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">🎫 Editor de Tickets</h2>
+              <p className="text-gray-600">¿Qué te gustaría hacer?</p>
+            </div>
+            <div className="space-y-4">
+              <button
+                onClick={handleNewProject}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                ✨ Crear Nuevo Diseño
+              </button>
+              <button
+                onClick={handleLoadProject}
+                className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                📁 Continuar Proyecto Anterior
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showProjectNameModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">📝 Nombre del Proyecto</h2>
+              <p className="text-gray-600">Asigna un nombre a tu proyecto</p>
+            </div>
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Mi Proyecto de Ticket"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                autoFocus
+                onKeyPress={(e) => e.key === 'Enter' && handleProjectNameSubmit()}
+              />
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleProjectNameSubmit}
+                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  ✅ Continuar
+                </button>
+                <button
+                  onClick={handleProjectNameCancel}
+                  className="flex-1 bg-gray-500 text-white py-3 px-4 rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                >
+                  ❌ Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación de importación exitosa */}
+      {showImportSuccessModal && importedProjectInfo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check size={32} className="text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Proyecto Cargado!</h2>
+              <p className="text-gray-600">El proyecto se ha importado correctamente</p>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Nombre:</span>
+                  <span className="text-sm text-gray-900 font-semibold">{importedProjectInfo.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Versión:</span>
+                  <span className="text-sm text-gray-900">{importedProjectInfo.version}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Elementos:</span>
+                  <span className="text-sm text-gray-900 font-semibold">{importedProjectInfo.elements}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Creado:</span>
+                  <span className="text-sm text-gray-900">{new Date(importedProjectInfo.createdAt).toLocaleString()}</span>
+                </div>
+                {importedProjectInfo.updatedAt && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Actualizado:</span>
+                    <span className="text-sm text-gray-900">{new Date(importedProjectInfo.updatedAt).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowImportSuccessModal(false)}
+                className="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                ¡Perfecto!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inputs ocultos para archivos */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleJsonUpload}
+        className="hidden"
+      />
+      <input
+        ref={projectFileInputRef}
+        type="file"
+        accept=".json"
+        onChange={importProjectConfig}
+        className="hidden"
+      />
 
       {/* Toolbar flotante superior */}
       <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white shadow-lg rounded-lg border border-gray-200 p-3">
@@ -3222,6 +3392,17 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
           </div>
           
           <button
+            onClick={() => setShowProjectNameModal(true)}
+            className="p-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-lg relative group"
+            title="Cambiar Nombre del Proyecto"
+          >
+            <Type size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Cambiar Nombre del Proyecto
+            </div>
+          </button>
+          
+          <button
             onClick={() => {
               if (showPreview) {
                 const previewFrame = document.querySelector('iframe');
@@ -3253,29 +3434,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
           </button>
           
-          <button
-            onClick={() => {
-              if (showPreview) {
-                const previewFrame = document.querySelector('iframe');
-                if (previewFrame) {
-                  // Abrir la consola del iframe
-                  previewFrame.contentWindow?.focus();
-                  console.log('💡 Para ver los logs del iframe:');
-                  console.log('1. Haz clic derecho en el iframe');
-                  console.log('2. Selecciona "Inspeccionar"');
-                  console.log('3. Ve a la pestaña "Console"');
-                  console.log('4. Los logs de las tablas aparecerán ahí');
-                }
-              }
-            }}
-            className="p-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-lg relative group flex items-center justify-center"
-            title="Ver Logs"
-          >
-            <ClipboardList size={20} />
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-              Ver Logs
-            </div>
-          </button>
+          
           
           <button
             onClick={() => setShowDebug(!showDebug)}
@@ -3294,18 +3453,38 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         </div>
       </div>
 
-      <div className="flex h-screen">
+      {/* Barra superior con nombre del proyecto */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <FileText size={20} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">{projectName}</h1>
+              <p className="text-sm text-gray-500">Editor de Tickets</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Elementos: {elements.length}</span>
+            <span className="text-sm text-gray-500">•</span>
+            <span className="text-sm text-gray-500">Ancho: {ticketWidth}{widthUnit}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex" style={{ height: 'calc(100vh - 80px)' }}>
         {/* Barra lateral de herramientas */}
         <div className="w-86 bg-gradient-to-b from-gray-50 to-white shadow-xl border-r border-gray-200 overflow-y-auto">
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <FileText size={20} className="text-white" />
+                <Settings2 size={20} className="text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Editor de Tickets</h2>
-                <p className="text-xs text-gray-500">Diseña tu ticket personalizado</p>
+                <h2 className="text-lg font-bold text-gray-900">Herramientas</h2>
+                <p className="text-xs text-gray-500">Configuración y elementos</p>
               </div>
             </div>
           </div>
@@ -4721,7 +4900,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   className="px-2 py-1 bg-white rounded text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
                   title="Zoom Out (Ctrl + Scroll)"
                 >
-                  <ZoomOut size={16} />
+                  <ZoomOut size={16} className="!text-gray-700" />
                 </button>
                 <span className="px-2 py-1 text-sm font-medium text-gray-700 min-w-[60px] text-center">
                   {Math.round(zoomLevel * 100)}%
@@ -4731,7 +4910,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   className="px-2 py-1 bg-white rounded text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
                   title="Zoom In (Ctrl + Scroll)"
                 >
-                  <ZoomIn size={16} />
+                  <ZoomIn size={16} className="!text-gray-700" />
                 </button>
                 <button
                   onClick={handleZoomReset}
@@ -4940,7 +5119,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 <p>Elementos: {elements.length}</p>
               </div>
             </div>
-            <div className="border border-gray-300 rounded p-2 bg-gray-50">
+            <div className="flex justify-center items-center border border-gray-300 rounded p-2 bg-gray-50">
               <iframe
                 srcDoc={generatePreviewHTML()}
                 className="w-full"
@@ -4954,13 +5133,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 sandbox="allow-scripts allow-same-origin"
               />
             </div>
-            <div className="mt-4 text-xs text-black">
-              <p><strong>Nota:</strong> Esta es una vista previa con iframe. Los scripts se ejecutan correctamente y las tablas muestran datos dinámicos.</p>
-              <p className="mt-1 text-gray-600 flex items-center gap-1">
-                <Info size={12} />
-                Abre la consola del iframe (clic derecho → Inspeccionar) para ver los logs de depuración.
-              </p>
-            </div>
+          
           </div>
         )}
       </div>
