@@ -131,7 +131,7 @@ export default function TicketEditor() {
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [jsonData, setJsonData] = useState<any>(null);
   const [draggedElement, setDraggedElement] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [showProperties, setShowProperties] = useState(false);
@@ -567,15 +567,16 @@ export default function TicketEditor() {
     } else if (elementType.startsWith('move-')) {
       const elementId = elementType.replace('move-', '');
       const rect = canvasRef.current?.getBoundingClientRect();
+      const element = elements.find(el => el.id === elementId);
       
-      if (rect) {
+      if (rect && element) {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
         // Mantener el elemento dentro de los límites del área de diseño (ancho del ticket)
         const ticketWidthPx = convertWidth(ticketWidth, widthUnit);
-        const maxX = ticketWidthPx - 50;
-        const maxY = calculateContentHeight() - 50;
+        const maxX = ticketWidthPx - element.width;
+        const maxY = calculateContentHeight() - element.height;
         const constrainedX = Math.max(0, Math.min(x, maxX));
         const constrainedY = Math.max(0, Math.min(y, maxY));
         
@@ -603,36 +604,16 @@ export default function TicketEditor() {
   };
 
   const handleElementDragStart = (e: React.DragEvent, elementId: string) => {
-    setIsDragging(true);
     setSelectedElement(elementId);
     e.dataTransfer.setData('text/plain', `move-${elementId}`);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleElementDragEnd = () => {
-    setIsDragging(false);
+    // Drag operation completed
   };
 
-  const handleElementDrag = (e: React.DragEvent, elementId: string) => {
-    if (!canvasRef.current || !isDragging) return;
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    const element = elements.find(el => el.id === elementId);
-    if (!element) return;
-
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
-
-    // Limitar la posición dentro del área de diseño (ancho del ticket)
-    const ticketWidthPx = convertWidth(ticketWidth, widthUnit);
-    const maxX = ticketWidthPx - element.width;
-    const maxY = calculateContentHeight() - element.height;
-    
-    x = Math.max(0, Math.min(x, maxX));
-    y = Math.max(0, Math.min(y, maxY));
-
-    updateElement(elementId, { x, y });
-  };
 
   const handleResizeStart = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation();
@@ -4156,7 +4137,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           <option value="">Ninguno (posición absoluta)</option>
                           {elements.filter(el => el.id !== selectedElement).map(el => (
                             <option key={el.id} value={el.id}>
-                              {el.type === 'text' ? `Texto: ${el.content.substring(0, 20)}...` : `Tabla: ${el.config?.columns?.length || 0} columnas`}
+                              {el.type === 'text' ? `Texto: ${el.content.substring(0, 20)}...` : 
+                               el.type === 'table' ? `Tabla: ${el.config?.columns?.length || 0} columnas` :
+                               el.type === 'qr' ? `QR: ${el.content.substring(0, 20)}...` : 
+                               `${el.type}: ${el.content.substring(0, 20)}...`}
                             </option>
                           ))}
                         </select>
@@ -5308,7 +5292,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   draggable
                   onDragStart={(e) => handleElementDragStart(e, element.id)}
                   onDragEnd={handleElementDragEnd}
-                  onDrag={(e) => handleElementDrag(e, element.id)}
                   className={`absolute cursor-move ${
                     selectedElement === element.id ? 'ring-2 ring-blue-500 border-2 border-blue-500' : 'border-2 border-transparent'
                   }`}
@@ -5332,7 +5315,13 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   {element.relativeTo && (
                     <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
                       <ArrowRight size={10} />
-                      {elements.find(el => el.id === element.relativeTo)?.type === 'text' ? 'Texto' : 'Tabla'}
+                      {(() => {
+                        const relativeElement = elements.find(el => el.id === element.relativeTo);
+                        if (relativeElement?.type === 'text') return 'Texto';
+                        if (relativeElement?.type === 'table') return 'Tabla';
+                        if (relativeElement?.type === 'qr') return 'QR';
+                        return relativeElement?.type || 'Elemento';
+                      })()}
                     </div>
                   )}
                   
