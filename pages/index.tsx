@@ -2624,10 +2624,7 @@ export default function TicketEditor() {
 </body>
 </html>`;
 
-    // Crear y descargar el archivo
-    const safeProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    const filename = `${safeProjectName}-template.html`;
-    triggerFileDownload(html, filename, 'text/html');
+    return html;
   };
 
   const clearCanvas = () => {
@@ -3673,7 +3670,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             onClick={async () => {
               try {
                 const html = await generateHTML();
-                triggerFileDownload(html, `${projectName || 'ticket'}.html`, 'text/html');
+                const safeProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                const filename = `${safeProjectName}-template.html`;
+                triggerFileDownload(html, filename, 'text/html');
               } catch (error) {
                 console.error('Error generating HTML:', error);
                 alert('Error al generar el HTML. Inténtalo de nuevo.');
