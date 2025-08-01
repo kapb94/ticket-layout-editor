@@ -392,10 +392,11 @@ export default function TicketEditor() {
           }
           break;
         case 'Delete':
-        
+          if (e.shiftKey) {
           e.preventDefault();
           deleteElement(selectedElement);
           return;
+          }
         default:
           return;
       }
