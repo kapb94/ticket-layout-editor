@@ -148,6 +148,13 @@ export default function TicketEditor() {
   const [showProjectNameModal, setShowProjectNameModal] = useState(false);
   const [showImportSuccessModal, setShowImportSuccessModal] = useState(false);
   const [importedProjectInfo, setImportedProjectInfo] = useState<any>(null);
+  
+  // Estados para redimensionamiento de sidebars
+  const [sidebarWidth, setSidebarWidth] = useState(344); // w-86 = 344px
+  const [propertiesWidth, setPropertiesWidth] = useState(384); // w-96 = 384px
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const [isResizingProperties, setIsResizingProperties] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const projectFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -232,6 +239,33 @@ export default function TicketEditor() {
 
   // Usar datos cargados o datos por defecto
   const currentJsonData = jsonData || defaultJsonData;
+
+  // Cargar configuración de localStorage al iniciar
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('ticketEditorConfig');
+    if (savedConfig) {
+      try {
+        const config = JSON.parse(savedConfig);
+        if (config.sidebarWidth) setSidebarWidth(config.sidebarWidth);
+        if (config.propertiesWidth) setPropertiesWidth(config.propertiesWidth);
+        if (config.showPreview !== undefined) setShowPreview(config.showPreview);
+        if (config.showDebug !== undefined) setShowDebug(config.showDebug);
+      } catch (error) {
+        console.error('Error al cargar configuración:', error);
+      }
+    }
+  }, []);
+
+  // Guardar configuración en localStorage cuando cambie
+  useEffect(() => {
+    const config = {
+      sidebarWidth,
+      propertiesWidth,
+      showPreview,
+      showDebug
+    };
+    localStorage.setItem('ticketEditorConfig', JSON.stringify(config));
+  }, [sidebarWidth, propertiesWidth, showPreview, showDebug]);
 
   // Actualizar posiciones relativas cuando cambien los elementos
   useEffect(() => {
@@ -3175,6 +3209,54 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
     URL.revokeObjectURL(url);
   };
 
+  // Funciones para redimensionamiento de sidebars
+  const handleSidebarResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingSidebar(true);
+  };
+
+  const handlePropertiesResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingProperties(true);
+  };
+
+  const handleSidebarResizeMove = (e: MouseEvent) => {
+    if (isResizingSidebar) {
+      const newWidth = Math.max(200, Math.min(600, e.clientX));
+      setSidebarWidth(newWidth);
+    } else if (isResizingProperties) {
+      const newWidth = Math.max(250, Math.min(800, window.innerWidth - e.clientX));
+      setPropertiesWidth(newWidth);
+    }
+  };
+
+  const handleSidebarResizeEnd = () => {
+    setIsResizingSidebar(false);
+    setIsResizingProperties(false);
+  };
+
+  // Agregar event listeners para redimensionamiento
+  useEffect(() => {
+    if (isResizingSidebar || isResizingProperties) {
+      document.addEventListener('mousemove', handleSidebarResizeMove);
+      document.addEventListener('mouseup', handleSidebarResizeEnd);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.removeEventListener('mousemove', handleSidebarResizeMove);
+      document.removeEventListener('mouseup', handleSidebarResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleSidebarResizeMove);
+      document.removeEventListener('mouseup', handleSidebarResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizingSidebar, isResizingProperties]);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Head>
@@ -3327,7 +3409,20 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               {showPreview ? 'Ocultar Vista Previa' : 'Mostrar Vista Previa'}
             </div>
           </button>
-          
+          <button
+            onClick={() => setShowJsonViewer(!showJsonViewer)}
+            className={`p-2 rounded text-lg relative group transition-colors flex items-center justify-center ${
+              showJsonViewer 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+            title={showJsonViewer ? 'Ocultar JSON' : 'Mostrar JSON'}
+          >
+            <Braces size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {showJsonViewer ? 'Ocultar JSON' : 'Mostrar JSON'}
+            </div>
+          </button>
           <button
             onClick={generateHTML}
             className="p-2 bg-green-600 text-white rounded hover:bg-green-700 text-lg relative group"
@@ -3450,6 +3545,8 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               {showDebug ? 'Ocultar Debugging' : 'Mostrar Debugging'}
             </div>
           </button>
+          
+          
         </div>
       </div>
 
@@ -3475,7 +3572,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
       <div className="flex" style={{ height: 'calc(100vh - 80px)' }}>
         {/* Barra lateral de herramientas */}
-        <div className="w-86 bg-gradient-to-b from-gray-50 to-white shadow-xl border-r border-gray-200 overflow-y-auto">
+        <div 
+          className="bg-gradient-to-b from-gray-50 to-white shadow-xl border-r border-gray-200 overflow-y-auto"
+          style={{ width: `${sidebarWidth}px` }}
+        >
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
             <div className="flex items-center gap-3">
@@ -3704,9 +3804,18 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
           </div>
         </div>
 
+        {/* Handle de redimensionamiento de sidebar */}
+        <div
+          className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors"
+          onMouseDown={handleSidebarResizeStart}
+        />
+
         {/* Panel de propiedades */}
         {showProperties && selectedElement && (
-          <div className="w-80 bg-white shadow-lg p-4 border-l border-gray-200 overflow-y-auto max-h-screen">
+          <div 
+            className="bg-white shadow-lg p-4 border-l border-gray-200 overflow-y-auto max-h-screen"
+            style={{ width: `${propertiesWidth}px` }}
+          >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-black">Propiedades</h3>
               <button
@@ -5107,6 +5216,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
           </div>
         </div>
+
+        {/* Handle de redimensionamiento de propiedades */}
+        {showProperties && selectedElement && (
+          <div
+            className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors"
+            onMouseDown={handlePropertiesResizeStart}
+          />
+        )}
 
         {/* Área de vista previa */}
         {showPreview && (
