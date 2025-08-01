@@ -3290,6 +3290,25 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
     };
   }, []);
 
+  // Funciones para manejar menús de toolbar (solo uno abierto a la vez)
+  const toggleSizeMenu = () => {
+    setShowSizeMenu(!showSizeMenu);
+    setShowElementsMenu(false);
+    setShowInfoMenu(false);
+  };
+
+  const toggleElementsMenu = () => {
+    setShowElementsMenu(!showElementsMenu);
+    setShowSizeMenu(false);
+    setShowInfoMenu(false);
+  };
+
+  const toggleInfoMenu = () => {
+    setShowInfoMenu(!showInfoMenu);
+    setShowSizeMenu(false);
+    setShowElementsMenu(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Head>
@@ -3537,36 +3556,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
           </button>
           
-          <button
-            onClick={() => {
-              if (showPreview) {
-                const previewFrame = document.querySelector('iframe');
-                if (previewFrame && previewFrame.contentWindow) {
-                  try {
-                    (previewFrame.contentWindow as any).console?.log('=== DEPURACIÓN DE VISTA PREVIA ===');
-                    (previewFrame.contentWindow as any).processAllTables?.();
-                    console.log('✅ Función processAllTables ejecutada en el iframe');
-                  } catch (error) {
-                    console.error('❌ Error al ejecutar processAllTables en el iframe:', error);
-                    // Forzar recarga del iframe como fallback
-                    const currentSrcDoc = previewFrame.getAttribute('srcDoc');
-                    if (currentSrcDoc) {
-                      previewFrame.setAttribute('srcDoc', '');
-                      setTimeout(() => {
-                        previewFrame.setAttribute('srcDoc', currentSrcDoc);
-                      }, 100);
-                    }
-                  }
-                }
-              }
-            }}
-            className="p-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-lg relative group flex items-center justify-center"
-          >
-            <RefreshCw size={20} />
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-              Actualizar Tablas
-            </div>
-          </button>
           
           {/* Opciones adicionales cuando la sidebar está oculta */}
           {sidebarHidden && (
@@ -3574,7 +3563,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               {/* Opción 1: Cambiar tamaño de página */}
               <div className="relative group toolbar-submenu">
                 <button
-                  onClick={() => setShowSizeMenu(!showSizeMenu)}
+                  onClick={toggleSizeMenu}
                   className="p-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-lg relative group"
                 >
                   <Ruler size={20} />
@@ -3622,7 +3611,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               {/* Opción 2: Lista de elementos */}
               <div className="relative group toolbar-submenu">
                 <button
-                  onClick={() => setShowElementsMenu(!showElementsMenu)}
+                  onClick={toggleElementsMenu}
                   className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-lg relative group"
                 >
                   <Layers size={20} />
@@ -3684,7 +3673,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               {/* Opción 3: Información */}
               <div className="relative group toolbar-submenu">
                 <button
-                  onClick={() => setShowInfoMenu(!showInfoMenu)}
+                  onClick={toggleInfoMenu}
                   className="p-2 bg-amber-600 text-white rounded hover:bg-amber-700 text-lg relative group"
                 >
                   <Info size={20} />
