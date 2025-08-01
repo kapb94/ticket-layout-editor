@@ -51,7 +51,11 @@ import {
   RefreshCw,
   ClipboardList,
   Bug,
-  Settings2
+  Settings2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Ruler,
+  Layers
 } from 'lucide-react';
 
 interface TicketElement {
@@ -155,6 +159,12 @@ export default function TicketEditor() {
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [isResizingProperties, setIsResizingProperties] = useState(false);
   
+  // Estados para ocultar/mostrar sidebar y submenús
+  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [showElementsMenu, setShowElementsMenu] = useState(false);
+  const [showSizeMenu, setShowSizeMenu] = useState(false);
+  const [showInfoMenu, setShowInfoMenu] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const projectFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -250,6 +260,7 @@ export default function TicketEditor() {
         if (config.propertiesWidth) setPropertiesWidth(config.propertiesWidth);
         if (config.showPreview !== undefined) setShowPreview(config.showPreview);
         if (config.showDebug !== undefined) setShowDebug(config.showDebug);
+        if (config.sidebarHidden !== undefined) setSidebarHidden(config.sidebarHidden);
       } catch (error) {
         console.error('Error al cargar configuración:', error);
       }
@@ -262,10 +273,28 @@ export default function TicketEditor() {
       sidebarWidth,
       propertiesWidth,
       showPreview,
-      showDebug
+      showDebug,
+      sidebarHidden
     };
     localStorage.setItem('ticketEditorConfig', JSON.stringify(config));
-  }, [sidebarWidth, propertiesWidth, showPreview, showDebug]);
+  }, [sidebarWidth, propertiesWidth, showPreview, showDebug, sidebarHidden]);
+
+  // Cerrar submenús cuando se haga clic fuera de ellos
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.toolbar-submenu')) {
+        setShowSizeMenu(false);
+        setShowElementsMenu(false);
+        setShowInfoMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Actualizar posiciones relativas cuando cambien los elementos
   useEffect(() => {
@@ -3395,6 +3424,21 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
       {/* Toolbar flotante superior */}
       <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white shadow-lg rounded-lg border border-gray-200 p-3">
         <div className="flex items-center space-x-2">
+          {/* Botón para ocultar/mostrar sidebar */}
+          <button
+            onClick={() => setSidebarHidden(!sidebarHidden)}
+            className={`p-2 rounded text-lg transition-colors relative group ${
+              sidebarHidden 
+                ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+          >
+            {sidebarHidden ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {sidebarHidden ? 'Mostrar Sidebar' : 'Ocultar Sidebar'}
+            </div>
+          </button>
+          
           <button
             onClick={() => setShowPreview(!showPreview)}
             className={`p-2 rounded text-lg transition-colors relative group ${
@@ -3402,7 +3446,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 ? 'bg-orange-600 text-white hover:bg-orange-700' 
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
-            title={showPreview ? 'Ocultar Vista Previa' : 'Mostrar Vista Previa'}
           >
             <Eye size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -3416,7 +3459,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 ? 'bg-green-600 text-white hover:bg-green-700' 
                 : 'bg-gray-600 text-white hover:bg-gray-700'
             }`}
-            title={showJsonViewer ? 'Ocultar JSON' : 'Mostrar JSON'}
           >
             <Braces size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -3426,7 +3468,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
           <button
             onClick={generateHTML}
             className="p-2 bg-green-600 text-white rounded hover:bg-green-700 text-lg relative group"
-            title="Generar Plantilla HTML"
           >
             <Save size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -3437,7 +3478,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
           <button
             onClick={clearCanvas}
             className="p-2 bg-red-600 text-white rounded hover:bg-red-700 text-lg relative group"
-            title="Limpiar Todo"
           >
             <Trash2 size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -3448,7 +3488,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
           <button
             onClick={generateExampleUsage}
             className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-lg relative group"
-            title="Ejemplo de uso"
           >
             <BookOpen size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -3460,7 +3499,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
           <button
             onClick={exportProjectConfig}
             className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-lg relative group"
-            title="Exportar Proyecto"
           >
             <Download size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -3474,7 +3512,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               accept=".json"
               onChange={importProjectConfig}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              title="Importar Proyecto"
             />
             <button
               className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-lg flex items-center justify-center"
@@ -3489,7 +3526,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
           <button
             onClick={() => setShowProjectNameModal(true)}
             className="p-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-lg relative group"
-            title="Cambiar Nombre del Proyecto"
           >
             <Type size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -3521,7 +3557,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               }
             }}
             className="p-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-lg relative group flex items-center justify-center"
-            title="Actualizar Tablas"
           >
             <RefreshCw size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -3529,7 +3564,187 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
           </button>
           
-          
+          {/* Opciones adicionales cuando la sidebar está oculta */}
+          {sidebarHidden && (
+            <>
+              {/* Opción 1: Cambiar tamaño de página */}
+              <div className="relative group toolbar-submenu">
+                <button
+                  onClick={() => setShowSizeMenu(!showSizeMenu)}
+                  className="p-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-lg relative group"
+                >
+                  <Ruler size={20} />
+                  <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded transition-opacity whitespace-nowrap pointer-events-none ${showSizeMenu ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
+                    Cambiar Tamaño de Página
+                  </div>
+                </button>
+                
+                {/* Submenú de tamaños */}
+                {showSizeMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px] toolbar-submenu">
+                    <div className="text-xs font-semibold text-gray-700 mb-2">Ancho del ticket:</div>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        type="number"
+                        value={ticketWidth}
+                        onChange={(e) => setTicketWidth(Number(e.target.value))}
+                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                        min="50"
+                        max="1000"
+                      />
+                      <select
+                        value={widthUnit}
+                        onChange={(e) => handleUnitChange(e.target.value as 'px' | 'in' | 'cm')}
+                        className="px-2 py-1 border border-gray-300 rounded text-xs"
+                      >
+                        <option value="px">px</option>
+                        <option value="in">pulgadas</option>
+                        <option value="cm">cm</option>
+                      </select>
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Ancho actual: <span className="font-medium">{convertWidth(ticketWidth, widthUnit).toFixed(0)}px</span>
+                    </div>
+                    <button
+                      onClick={() => setShowSizeMenu(false)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Opción 2: Lista de elementos */}
+              <div className="relative group toolbar-submenu">
+                <button
+                  onClick={() => setShowElementsMenu(!showElementsMenu)}
+                  className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-lg relative group"
+                >
+                  <Layers size={20} />
+                  <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded transition-opacity whitespace-nowrap pointer-events-none ${showElementsMenu ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
+                    Elementos Disponibles
+                  </div>
+                </button>
+                
+                {/* Submenú de elementos */}
+                {showElementsMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[250px] toolbar-submenu">
+                    <div className="text-xs font-semibold text-gray-700 mb-2">Arrastra elementos al área de diseño:</div>
+                    <div className="space-y-2">
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'text')}
+                        className="p-2 bg-blue-50 border border-blue-200 rounded cursor-move hover:bg-blue-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center">
+                          <FileText size={12} className="text-blue-600" />
+                        </div>
+                        <span className="font-medium">Etiqueta de texto</span>
+                      </div>
+                      
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'table')}
+                        className="p-2 bg-green-50 border border-green-200 rounded cursor-move hover:bg-green-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-green-100 rounded flex items-center justify-center">
+                          <Table size={12} className="text-green-600" />
+                        </div>
+                        <span className="font-medium">Tabla</span>
+                      </div>
+                      
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'qr')}
+                        className="p-2 bg-purple-50 border border-purple-200 rounded cursor-move hover:bg-purple-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-purple-100 rounded flex items-center justify-center">
+                          <svg className="w-3 h-3 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 11h6v6H3v-6zm2 2v2h2v-2H5zm8 2h6v6h-6v-6zm2 2v2h2v-2h-2z"/>
+                          </svg>
+                        </div>
+                        <span className="font-medium">Código QR</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowElementsMenu(false)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Opción 3: Información */}
+              <div className="relative group toolbar-submenu">
+                <button
+                  onClick={() => setShowInfoMenu(!showInfoMenu)}
+                  className="p-2 bg-amber-600 text-white rounded hover:bg-amber-700 text-lg relative group"
+                >
+                  <Info size={20} />
+                  <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded transition-opacity whitespace-nowrap pointer-events-none ${showInfoMenu ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
+                    Información
+                  </div>
+                </button>
+                
+                {/* Submenú de información */}
+                {showInfoMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[300px] max-w-[400px] toolbar-submenu">
+                    <div className="text-xs font-semibold text-gray-700 mb-2">Instrucciones:</div>
+                    <div className="space-y-1 text-xs text-gray-600">
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Arrastra elementos al área de diseño</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Haz clic para seleccionar elementos</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Arrastra para mover elementos</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Usa las esquinas para redimensionar</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Haz clic en tablas para configurar</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 pt-2 border-t border-gray-200">
+                      <div className="text-xs font-semibold text-gray-700 mb-1">Atajos de Teclado:</div>
+                      <div className="space-y-1 text-xs text-gray-600">
+                        <div className="flex justify-between">
+                          <span>Mover elemento:</span>
+                          <span className="font-mono bg-gray-100 px-1 rounded">Flechas</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Redimensionar:</span>
+                          <span className="font-mono bg-gray-100 px-1 rounded">Shift + Flechas</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Zoom:</span>
+                          <span className="font-mono bg-gray-100 px-1 rounded">Ctrl + Scroll</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => setShowInfoMenu(false)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
           
           <button
             onClick={() => setShowDebug(!showDebug)}
@@ -3538,7 +3753,6 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
                 : 'bg-gray-600 text-white hover:bg-gray-700'
             }`}
-            title={showDebug ? 'Ocultar Debugging' : 'Mostrar Debugging'}
           >
             <Bug size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -3572,10 +3786,11 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
       <div className="flex" style={{ height: 'calc(100vh - 80px)' }}>
         {/* Barra lateral de herramientas */}
-        <div 
-          className="bg-gradient-to-b from-gray-50 to-white shadow-xl border-r border-gray-200 overflow-y-auto"
-          style={{ width: `${sidebarWidth}px` }}
-        >
+        {!sidebarHidden && (
+          <div 
+            className="bg-gradient-to-b from-gray-50 to-white shadow-xl border-r border-gray-200 overflow-y-auto"
+            style={{ width: `${sidebarWidth}px` }}
+          >
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
             <div className="flex items-center gap-3">
@@ -3803,12 +4018,15 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
           </div>
         </div>
+        )}
 
         {/* Handle de redimensionamiento de sidebar */}
-        <div
-          className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors"
-          onMouseDown={handleSidebarResizeStart}
-        />
+        {!sidebarHidden && (
+          <div
+            className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors"
+            onMouseDown={handleSidebarResizeStart}
+          />
+        )}
 
         {/* Panel de propiedades */}
         {showProperties && selectedElement && (
