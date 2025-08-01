@@ -13,6 +13,9 @@ Un editor visual completo para crear layouts de tickets personalizables que se p
 ### 📝 **Elementos de Diseño**
 - **Elementos de texto** con contenido dinámico usando referencias JSON
 - **Tablas dinámicas** con configuración avanzada de columnas
+- **Elementos QR** para generar códigos QR dinámicos
+- **Elementos de imagen** con soporte para archivos locales
+- **Elementos de fórmula** para manipular datos JSON con JavaScript básico
 - **Posicionamiento preciso** con controles X/Y y alineación
 - **Redimensionado visual** arrastrando las esquinas
 
@@ -94,6 +97,9 @@ ticket-editor/
 1. **Arrastrar elementos** desde la barra lateral al área de diseño:
    - **Texto**: Para contenido de texto
    - **Tabla**: Para datos tabulares
+   - **QR**: Para generar códigos QR dinámicos
+   - **Imagen**: Para insertar imágenes locales
+   - **Fórmula**: Para manipular datos JSON con JavaScript
 
 #### Seleccionar y Editar Elementos
 - **Hacer clic** en cualquier elemento para seleccionarlo
@@ -126,6 +132,25 @@ ticket-editor/
 - **Columnas**: Configurar encabezados y propiedades
 - **Formateo avanzado**: Número, moneda, fecha, texto
 - **Estilos**: Bordes, fondo de encabezado, alineación
+
+#### Elementos QR
+- **Contenido dinámico**: Texto o URL que se convertirá en QR
+- **Tamaño configurable**: Ancho y alto personalizables
+- **Generación automática**: Se actualiza automáticamente con los datos
+
+#### Elementos de Imagen
+- **Carga de archivos**: Soporte para imágenes locales
+- **Conversión automática**: Se convierte a Base64 para exportación
+- **Mantenimiento de proporción**: Opción para preservar relación de aspecto
+- **Ajuste de objeto**: Contener, cubrir o rellenar el contenedor
+
+#### Elementos de Fórmula
+- **Código JavaScript**: Escribir código JavaScript básico para manipular datos JSON
+- **Formato de salida**: Texto, número, booleano o JSON
+- **Manejo de errores**: Mostrar error, ocultar error o mostrar valor por defecto
+- **Timeout configurable**: Límite de tiempo para ejecución (por defecto 5 segundos)
+- **Ejecución segura**: Entorno sandboxed con acceso limitado a APIs del navegador
+- **Variables disponibles**: `data` (JSON cargado), funciones matemáticas y de utilidad
 
 ### 4. Posicionamiento Relativo
 
@@ -240,6 +265,34 @@ Usar sintaxis `{{propiedad}}` en elementos de texto:
 - `{{venta.total}}` → 1250.75
 - `{{productos.totalItems}}` → 5
 
+### Fórmulas JavaScript
+En elementos de tipo "Fórmula", escribir código JavaScript para manipular datos:
+
+```javascript
+// Ejemplo: Calcular total de venta
+const total = data.venta.items.reduce((sum, item) => sum + item.precio, 0);
+return total.toFixed(2);
+
+// Ejemplo: Concatenar información
+return `${data.empresa.nombre} - ${data.venta.numero}`;
+
+// Ejemplo: Validación condicional
+if (data.venta.total > 1000) {
+  return "Venta mayor a $1000";
+} else {
+  return "Venta menor a $1000";
+}
+```
+
+**Variables disponibles:**
+- `data`: Objeto JSON completo cargado
+- `Math`: Funciones matemáticas (Math.round, Math.floor, etc.)
+- `String`, `Number`, `Boolean`: Constructores de tipos
+- `Array`, `Object`: Funciones de arrays y objetos
+- `Date`: Para manejo de fechas
+- `parseInt`, `parseFloat`: Conversión de tipos
+- `isNaN`, `isFinite`: Validaciones numéricas
+
 ## 🎨 Configuración de Tablas
 
 ### Propiedades de Columna
@@ -316,6 +369,8 @@ El HTML generado incluye:
 - **Función `processTicketTemplate`** para poblar datos
 - **Función `fillTable`** para tablas dinámicas
 - **Función `getValueByPath`** para acceder a propiedades anidadas
+- **Función `executeFormula`** para ejecutar fórmulas JavaScript de forma segura
+- **Librería QR integrada** para generar códigos QR dinámicos
 
 ## 🔧 Configuración Avanzada
 
@@ -355,6 +410,12 @@ El HTML generado incluye:
 1. **Verificar ruta de datos**: Confirmar que `dataPath` es correcta
 2. **Revisar columnas**: Asegurar que las propiedades existen
 3. **Actualizar vista previa**: Forzar actualización del iframe
+
+#### Fórmulas No Se Ejecutan
+1. **Verificar sintaxis JavaScript**: Revisar que el código sea válido
+2. **Comprobar timeout**: Aumentar el tiempo de ejecución si es necesario
+3. **Revisar manejo de errores**: Configurar mostrar errores para debugging
+4. **Verificar variables**: Asegurar que se usan las variables disponibles
 
 #### Error al Exportar
 1. **Verificar permisos**: Asegurar permisos de escritura

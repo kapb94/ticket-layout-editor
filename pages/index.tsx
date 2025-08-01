@@ -1848,6 +1848,7 @@ export default function TicketEditor() {
         }
         .ticket {
             width: ${widthPx}px;
+            overflow-x: hidden;
             border: none;
             position: relative;
             background: white;
@@ -4167,6 +4168,20 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                     <p className="text-xs text-gray-500">Imágenes convertidas a base64</p>
                   </div>
                 </div>
+                
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'formula')}
+                  className="p-3 bg-red-50 border border-red-200 rounded-lg cursor-move hover:bg-red-100 transition-colors text-black font-medium flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                    <Code size={16} className="text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Fórmula JavaScript</p>
+                    <p className="text-xs text-gray-500">Manipula datos JSON con JavaScript</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -4359,6 +4374,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                el.type === 'table' ? `Tabla: ${el.config?.columns?.length || 0} columnas` :
                                el.type === 'qr' ? `QR: ${el.content.substring(0, 20)}...` : 
                                el.type === 'image' ? `Imagen: ${el.config?.originalName || el.content.substring(0, 20)}...` :
+                               el.type === 'formula' ? `Fórmula: ${el.config?.javascriptCode?.substring(0, 20) || 'JavaScript'}...` :
                                `${el.type}: ${el.content.substring(0, 20)}...`}
                             </option>
                           ))}
@@ -5511,6 +5527,148 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                       </div>
                     </div>
                   )}
+
+                  {element.type === 'formula' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Código JavaScript:</label>
+                        <textarea
+                          value={element.config?.javascriptCode || ''}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              javascriptCode: e.target.value 
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border rounded text-black font-mono text-xs"
+                          rows={8}
+                          placeholder="// Ejemplo:&#10;const total = data.venta.items.reduce((sum, item) => sum + item.precio, 0);&#10;return total.toFixed(2);"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Formato de salida:</label>
+                        <select
+                          value={element.config?.outputFormat || 'text'}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              outputFormat: e.target.value as 'text' | 'number' | 'boolean' | 'json'
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border rounded text-black"
+                        >
+                          <option value="text">Texto</option>
+                          <option value="number">Número</option>
+                          <option value="boolean">Booleano</option>
+                          <option value="json">JSON</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Manejo de errores:</label>
+                        <select
+                          value={element.config?.errorHandling || 'show-default'}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              errorHandling: e.target.value as 'show-error' | 'hide-error' | 'show-default'
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border rounded text-black"
+                        >
+                          <option value="show-error">Mostrar error</option>
+                          <option value="hide-error">Ocultar error</option>
+                          <option value="show-default">Mostrar valor por defecto</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Valor por defecto:</label>
+                        <input
+                          type="text"
+                          value={element.config?.defaultValue || ''}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              defaultValue: e.target.value 
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border rounded text-black"
+                          placeholder="Valor a mostrar si hay error"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Timeout (ms):</label>
+                        <input
+                          type="number"
+                          value={element.config?.timeout || 5000}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              timeout: Number(e.target.value) 
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border rounded text-black"
+                          min="1000"
+                          max="30000"
+                          step="1000"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Tamaño de fuente:</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min="8"
+                            max="32"
+                            value={element.fontSize || 14}
+                            onChange={(e) => updateElementFontSize(selectedElement, Number(e.target.value))}
+                            className="flex-1"
+                          />
+                          <span className="text-sm text-black w-8">
+                            {element.fontSize || 14}px
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Alineación:</label>
+                        <div className="flex gap-1">
+                          {(['left', 'center', 'right', 'justify'] as const).map((align) => (
+                            <button
+                              key={align}
+                              onClick={() => updateElementTextAlign(selectedElement, align)}
+                              className={`flex-1 px-2 py-1 text-xs rounded border transition-colors flex items-center justify-center ${
+                                element.textAlign === align 
+                                  ? 'bg-blue-500 text-white border-blue-500' 
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                              }`}
+                              title={`Alinear ${align === 'left' ? 'izquierda' : align === 'center' ? 'centro' : align === 'right' ? 'derecha' : 'justificar'}`}
+                            >
+                              {align === 'left' ? <AlignLeft size={14} /> : align === 'center' ? <AlignCenter size={14} /> : align === 'right' ? <AlignRight size={14} /> : <AlignJustify size={14} />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Code size={16} className="text-red-600" />
+                          <span className="text-sm font-medium text-red-800">Información de la fórmula</span>
+                        </div>
+                        <div className="text-xs text-red-700 space-y-1">
+                          <div>• Usa JavaScript básico para manipular datos JSON</div>
+                          <div>• Variable <code className="bg-red-100 px-1 rounded">data</code> contiene el JSON cargado</div>
+                          <div>• Debes usar <code className="bg-red-100 px-1 rounded">return</code> para devolver el resultado</div>
+                          <div>• Ejecución segura con timeout configurable</div>
+                          <div>• Soporta operaciones matemáticas, strings y arrays</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -5742,6 +5900,26 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               {element.content || "Seleccionar imagen..."}
                             </div>
                           </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : element.type === 'formula' ? (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <div className="w-full h-full flex items-center justify-center bg-white border border-gray-300 rounded">
+                        <div className="text-center">
+                          <div className="w-8 h-8 mx-auto mb-1 bg-red-100 rounded flex items-center justify-center">
+                            <Code size={16} className="text-red-600" />
+                          </div>
+                          <div className="text-xs text-gray-600 font-medium">Fórmula</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {element.config?.javascriptCode || "Código JavaScript..."}
+                          </div>
+                        </div>
+                      </div>
+                      {element.config?.javascriptCode && (
+                        <div className="absolute top-0 right-0 bg-red-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                          <Code size={10} />
+                          JS
                         </div>
                       )}
                     </div>
