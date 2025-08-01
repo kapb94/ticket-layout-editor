@@ -372,6 +372,11 @@ export default function TicketEditor() {
             newY += step;
           }
           break;
+        case 'Delete':
+        case 'Backspace':
+          e.preventDefault();
+          deleteElement(selectedElement);
+          return;
         default:
           return;
       }
@@ -555,6 +560,9 @@ export default function TicketEditor() {
         };
         
         setElements([...elements, newElement]);
+        
+        // Cerrar el menú de elementos cuando se arrastra y suelta un elemento
+        setShowElementsMenu(false);
       }
     } else if (elementType.startsWith('move-')) {
       const elementId = elementType.replace('move-', '');
