@@ -373,7 +373,7 @@ export default function TicketEditor() {
           }
           break;
         case 'Delete':
-        case 'Backspace':
+        
           e.preventDefault();
           deleteElement(selectedElement);
           return;
