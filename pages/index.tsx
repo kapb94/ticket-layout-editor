@@ -82,6 +82,8 @@ export default function TicketEditor() {
   const [isConverting, setIsConverting] = useState(false);
   const [hasCustomJson, setHasCustomJson] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
+  const [isDraggingColumn, setIsDraggingColumn] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Datos JSON por defecto (hardcodeados)
@@ -2702,6 +2704,56 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
     }
   };
 
+  // Funciones para drag and drop de columnas
+  const handleColumnDragStart = (e: React.DragEvent, columnIndex: number) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', columnIndex.toString());
+    setDraggedColumnIndex(columnIndex);
+    setIsDraggingColumn(true);
+  };
+
+  const handleColumnDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleColumnDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedColumnIndex === null || draggedColumnIndex === dropIndex) {
+      setDraggedColumnIndex(null);
+      setIsDraggingColumn(false);
+      return;
+    }
+
+    const element = elements.find(el => el.id === selectedElement);
+    if (!element || !element.config?.columns || !selectedElement) return;
+
+    const newColumns = [...element.config.columns];
+    const draggedColumn = newColumns[draggedColumnIndex];
+    
+    // Remover la columna de su posición original
+    newColumns.splice(draggedColumnIndex, 1);
+    
+    // Insertar en la nueva posición
+    newColumns.splice(dropIndex, 0, draggedColumn);
+    
+    updateElement(selectedElement, {
+      config: {
+        ...element.config,
+        columns: newColumns
+      }
+    });
+
+    setDraggedColumnIndex(null);
+    setIsDraggingColumn(false);
+  };
+
+  const handleColumnDragEnd = () => {
+    setDraggedColumnIndex(null);
+    setIsDraggingColumn(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Head>
@@ -2864,7 +2916,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
       <div className="flex h-screen">
         {/* Barra lateral de herramientas */}
-        <div className="w-80 bg-white shadow-lg p-4 overflow-y-auto">
+        <div className="w-86 bg-white shadow-lg p-4 overflow-y-auto">
           <h2 className="text-lg font-bold mb-4 text-black">Editor de Tickets</h2>
           
           {/* Configuración de ancho */}
@@ -3030,7 +3082,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             <h3 className="text-sm font-medium mb-2 text-yellow-800">⌨️ Movimiento con teclado:</h3>
             <div className="text-xs text-yellow-700 space-y-1">
               <div>• <strong>Flechas:</strong> Mover elemento seleccionado 5px</div>
-              <div>• <strong>Shift + Flechas:</strong> Mover 20px</div>
+              <div>• <strong>Shift + Flechas:</strong> Cambiar tamaño del elemento seleccionado</div>
               <div>• <strong>Selecciona un elemento</strong> para activar</div>
             </div>
           </div>
@@ -3515,6 +3567,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         <label className="block text-xs font-medium mb-1 text-black">
                           Columnas:
                         </label>
+                        <div className="text-xs text-blue-600 mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                          💡 <strong>Consejo:</strong> Puedes reordenar las columnas arrastrándolas o usando los botones ↑↓
+                        </div>
                         {element.config?.columns?.length > 0 && (
                           <div className="text-xs text-green-600 mb-2">
                             ✅ {element.config.columns.length} columna(s) configurada(s)
@@ -3537,9 +3592,78 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           </div>
                         )}
                         {(element.config?.columns || []).map((column: TableColumn, index: number) => (
-                          <div key={index} className="space-y-2 mb-3 p-2 border border-gray-200 rounded bg-gray-50">
+                          <div 
+                            key={index} 
+                            className={`space-y-2 mb-3 p-2 border rounded transition-all duration-200 ${
+                              draggedColumnIndex === index 
+                                ? 'border-blue-500 bg-blue-50 shadow-lg opacity-50' 
+                                : isDraggingColumn && draggedColumnIndex !== index
+                                ? 'border-dashed border-gray-300 bg-gray-50'
+                                : 'border-gray-200 bg-gray-50'
+                            }`}
+                            draggable
+                            onDragStart={(e) => handleColumnDragStart(e, index)}
+                            onDragOver={handleColumnDragOver}
+                            onDrop={(e) => handleColumnDrop(e, index)}
+                            onDragEnd={handleColumnDragEnd}
+                          >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-gray-700">Columna {index + 1}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-gray-400 cursor-move mr-1" title="Arrastra para reordenar">⋮⋮</span>
+                                <span className="text-xs font-medium text-gray-700">Columna {index + 1}</span>
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => {
+                                      if (index > 0) {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        const temp = newColumns[index];
+                                        newColumns[index] = newColumns[index - 1];
+                                        newColumns[index - 1] = temp;
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }
+                                    }}
+                                    disabled={index === 0}
+                                    className={`px-1 py-0.5 rounded text-xs transition-colors ${
+                                      index === 0 
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                                    }`}
+                                    title="Mover hacia arriba"
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (index < (element.config?.columns || []).length - 1) {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        const temp = newColumns[index];
+                                        newColumns[index] = newColumns[index + 1];
+                                        newColumns[index + 1] = temp;
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }
+                                    }}
+                                    disabled={index === (element.config?.columns || []).length - 1}
+                                    className={`px-1 py-0.5 rounded text-xs transition-colors ${
+                                      index === (element.config?.columns || []).length - 1 
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                                    }`}
+                                    title="Mover hacia abajo"
+                                  >
+                                    ↓
+                                  </button>
+                                </div>
+                              </div>
                               <button
                                 onClick={() => {
                                   const newColumns = (element.config?.columns || []).filter((_: TableColumn, i: number) => i !== index);
@@ -3995,7 +4119,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
         {/* Visor de JSON */}
         {showJsonViewer && (
-          <div className="w-80 bg-white shadow-lg p-4 border-l border-gray-200 overflow-y-auto max-h-screen">
+          <div className="w-82 bg-white shadow-lg p-4 border-l border-gray-200 overflow-y-auto max-h-screen">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-black">Visor de JSON</h3>
               <button
@@ -4108,22 +4232,24 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   
                   {element.type === 'text' ? (
                     <div className="relative w-full h-full">
-                      <input
-                        type="text"
-                        value={element.content}
-                        onChange={(e) => updateElement(element.id, { content: e.target.value })}
-                        className="w-full h-full bg-transparent border-none outline-none text-black font-medium"
+                      <div
+                        className="w-full h-full bg-transparent text-black font-medium pointer-events-none overflow-hidden"
                         style={{ 
                           fontSize: `${element.fontSize || 14}px`, 
                           color: '#000000',
-                          textAlign: element.textAlign || 'left'
+                          textAlign: element.textAlign || 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis'
                         }}
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        placeholder={currentJsonData ? "Texto... Usa {{propiedad}} o {{arreglo;propiedad;condición=valor}} o {{propiedad | formateador}} para datos JSON" : "Texto..."}
-                      />
+                        title={element.content || (currentJsonData ? "Texto... Usa {{propiedad}} o {{arreglo;propiedad;condición=valor}} o {{propiedad | formateador}} para datos JSON" : "Texto...")}
+                      >
+                        {element.content || (currentJsonData ? "Texto... Usa {{propiedad}} o {{arreglo;propiedad;condición=valor}} o {{propiedad | formateador}} para datos JSON" : "Texto...")}
+                      </div>
                       {element.content.includes('{{') && (
-                        <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 rounded">
+                        <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none">
                           JSON
                         </div>
                       )}
