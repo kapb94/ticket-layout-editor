@@ -3186,7 +3186,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
   };
 
   const handleWheelZoom = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
+    if (e.shiftKey) {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
       setZoomLevel(prev => Math.max(0.25, Math.min(3, prev + delta)));
@@ -3274,6 +3274,21 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
       document.body.style.userSelect = '';
     };
   }, [isResizingSidebar, isResizingProperties]);
+
+  // Deshabilitar zoom normal del navegador en toda la página
+  useEffect(() => {
+    const handleGlobalWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('wheel', handleGlobalWheel, { passive: false });
+
+    return () => {
+      document.removeEventListener('wheel', handleGlobalWheel);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -3718,7 +3733,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         </div>
                         <div className="flex justify-between">
                           <span>Zoom:</span>
-                          <span className="font-mono bg-gray-100 px-1 rounded">Ctrl + Scroll</span>
+                          <span className="font-mono bg-gray-100 px-1 rounded">Shift + Scroll</span>
                         </div>
                       </div>
                     </div>
@@ -3970,7 +3985,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Zoom:</span>
-                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">Ctrl + Scroll</span>
+                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">Shift + Scroll</span>
                 </div>
               </div>
             </div>
@@ -5217,7 +5232,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 <button
                   onClick={handleZoomOut}
                   className="px-2 py-1 bg-white rounded text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
-                  title="Zoom Out (Ctrl + Scroll)"
+                  title="Zoom Out (Shift + Scroll)"
                 >
                   <ZoomOut size={16} className="!text-gray-700" />
                 </button>
@@ -5227,7 +5242,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 <button
                   onClick={handleZoomIn}
                   className="px-2 py-1 bg-white rounded text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
-                  title="Zoom In (Ctrl + Scroll)"
+                  title="Zoom In (Shift + Scroll)"
                 >
                   <ZoomIn size={16} className="!text-gray-700" />
                 </button>
@@ -5241,7 +5256,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               </div>
             </div>
             
-            <div className="overflow-auto border border-gray-200 rounded" style={{ height: 'calc(100vh - 200px)' }}>
+            <div onWheel={handleWheelZoom} className="overflow-auto border border-gray-200 rounded" style={{ height: 'calc(100vh - 200px)' }}>
               <div
                 ref={canvasRef}
                 className="border-2 border-dashed border-gray-300 bg-gray-50 relative"
@@ -5255,7 +5270,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onClick={handleCanvasClick}
-                onWheel={handleWheelZoom}
+                
               >
               {/* Debug overlay - mostrar información de límites */}
               {showDebug && (
