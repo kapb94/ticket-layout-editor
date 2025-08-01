@@ -55,7 +55,7 @@ import {
 
 interface TicketElement {
   id: string;
-  type: 'text' | 'table';
+  type: 'text' | 'table' | 'qr';
   x: number;
   y: number;
   width: number;
@@ -431,7 +431,7 @@ export default function TicketEditor() {
     const elementType = e.dataTransfer.getData('text/plain');
     
     if (elementType.startsWith('new-')) {
-      const type = elementType.replace('new-', '') as 'text' | 'table';
+      const type = elementType.replace('new-', '') as 'text' | 'table' | 'qr';
       const rect = canvasRef.current?.getBoundingClientRect();
       
       if (rect) {
@@ -464,9 +464,9 @@ export default function TicketEditor() {
           type,
           x: finalX,
           y: finalY,
-          width: type === 'text' ? 150 : 200,
-          height: type === 'text' ? 30 : 100,
-          content: type === 'text' ? 'Texto de ejemplo' : '',
+          width: type === 'text' ? 150 : type === 'qr' ? 100 : 200,
+          height: type === 'text' ? 30 : type === 'qr' ? 100 : 100,
+          content: type === 'text' ? 'Texto de ejemplo' : type === 'qr' ? 'https://ejemplo.com' : '',
           fontSize: type === 'text' ? 14 : 12,
           textAlign: type === 'text' ? 'left' : undefined,
           config: type === 'table' ? {
@@ -1200,6 +1200,7 @@ export default function TicketEditor() {
 <html>
 <head>
     <meta charset="UTF-8">
+    <script src="/qrcode.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -1256,6 +1257,14 @@ export default function TicketEditor() {
             font-style: italic;
             padding: 10px;
         }
+        .qr-code {
+            display: inline-block;
+            background: white;
+            padding: 2px;
+        }
+        .qr-code canvas {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -1299,12 +1308,91 @@ export default function TicketEditor() {
         html += `
             </table>
         </div>`;
+      } else if (element.type === 'qr') {
+        const processedContent = replaceJsonReferences(element.content, currentJsonData);
+        html += `
+        <div class="element" data-element-id="${element.id}" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; display: flex; align-items: center; justify-content: center;">
+            <div class="qr-code" id="qr-${element.id}" data-content="${processedContent}" data-size="${element.width}"></div>
+        </div>`;
       }
     });
 
     html += `
     </div>
     <script>
+        // Función para generar QR codes usando la librería qrcode.js
+        function generateQRCode(content, size, elementId) {
+            if (!content || content.trim() === '') {
+                return '<div style="width: ' + size + 'px; height: ' + size + 'px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666;">Sin contenido</div>';
+            }
+
+            const qrSize = Math.min(size - 4, 200);
+            const options = {
+                text: content,
+                width: qrSize,
+                height: qrSize,
+                colorDark: '#000000',
+                colorLight: '#FFFFFF',
+                correctLevel: QRCode.CorrectLevel.M
+            };
+
+            try {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.display = 'none';
+                document.body.appendChild(tempDiv);
+                
+                new QRCode(tempDiv, options);
+                
+                const qrCanvas = tempDiv.querySelector('canvas');
+                if (qrCanvas) {
+                    document.body.removeChild(tempDiv);
+                    return qrCanvas.outerHTML;
+                } else {
+                    document.body.removeChild(tempDiv);
+                    throw new Error('No se pudo generar el canvas del QR');
+                }
+            } catch (error) {
+                console.error('Error en generateQRCode:', error);
+                return '<div style="width: ' + size + 'px; height: ' + size + 'px; background: #ffcccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #cc0000; border: 1px solid #cc0000;">Error QR</div>';
+            }
+        }
+        
+        // Función para generar todos los QR codes
+        function generateAllQRCodes() {
+            console.log('Generando QR codes...');
+            const qrElements = document.querySelectorAll('[id^="qr-"]');
+            console.log('Elementos QR encontrados:', qrElements.length);
+            qrElements.forEach(element => {
+                const content = element.getAttribute('data-content');
+                const size = parseInt(element.getAttribute('data-size'));
+                const elementId = element.id;
+                console.log('Generando QR para:', content, 'tamaño:', size);
+                
+                if (!content || content.trim() === '') {
+                    element.innerHTML = '<div style="width: ' + size + 'px; height: ' + size + 'px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666;">Sin contenido</div>';
+                    return;
+                }
+
+                const qrSize = Math.min(size - 4, 200);
+                const options = {
+                    text: content,
+                    width: qrSize,
+                    height: qrSize,
+                    colorDark: '#000000',
+                    colorLight: '#FFFFFF',
+                    correctLevel: QRCode.CorrectLevel.M
+                };
+
+                try {
+                    new QRCode(element, options);
+                    console.log('QR generado exitosamente para:', content);
+                } catch (error) {
+                    console.error('Error generando QR:', error);
+                    element.innerHTML = '<div style="width: ' + size + 'px; height: ' + size + 'px; background: #ffcccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #cc0000; border: 1px solid #cc0000;">Error QR</div>';
+                }
+            });
+        }
+        
         // Función para obtener valor de objeto por ruta
         function getValueByPath(obj, path) {
             try {
@@ -1557,25 +1645,28 @@ export default function TicketEditor() {
         
         // Ejecutar inmediatamente y también cuando el DOM esté listo
         console.log('Script de vista previa cargado');
-        processAllTables();
         
-        // Ajustar posiciones después de que las tablas se llenen
-        setTimeout(() => {
-            adjustRelativePositions();
-        }, 200);
+        // Esperar a que la librería QR se cargue
+        function initializeQR() {
+            if (typeof QRCode !== 'undefined') {
+                generateAllQRCodes();
+                processAllTables();
+                
+                // Ajustar posiciones después de que las tablas se llenen
+                setTimeout(() => {
+                    adjustRelativePositions();
+                }, 200);
+            } else {
+                setTimeout(initializeQR, 100);
+            }
+        }
         
         // También ejecutar cuando el DOM esté listo por si acaso
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                processAllTables();
-                setTimeout(adjustRelativePositions, 200);
-            });
+            document.addEventListener('DOMContentLoaded', initializeQR);
         } else {
             // DOM ya está listo, ejecutar inmediatamente
-            setTimeout(() => {
-                processAllTables();
-                setTimeout(adjustRelativePositions, 200);
-            }, 100);
+            setTimeout(initializeQR, 100);
         }
     </script>`;
 
@@ -1591,6 +1682,7 @@ export default function TicketEditor() {
 <html>
 <head>
     <meta charset="UTF-8">
+    <script src="/qrcode.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -1643,6 +1735,14 @@ export default function TicketEditor() {
         .table.no-borders th, .table.no-borders td {
             border: none;
         }
+        .qr-code {
+            display: inline-block;
+            background: white;
+            padding: 2px;
+        }
+        .qr-code canvas {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -1680,6 +1780,13 @@ export default function TicketEditor() {
         }
         html += `\n            </table>`;
         html += `\n        </div>`;
+      } else if (element.type === 'qr') {
+        // Mantener los placeholders originales en lugar de procesarlos
+        const templateContent = element.content;
+        html += `
+        <div class="element" data-element-id="${element.id}" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; display: flex; align-items: center; justify-content: center;">
+            <div class="qr-code" id="qr-${element.id}" data-content="${templateContent}" data-size="${element.width}"></div>
+        </div>`;
       }
     });
 
@@ -2099,6 +2206,81 @@ export default function TicketEditor() {
             console.log('Tabla', tableId, 'llenada con', tableData.length, 'filas');
         }
         
+        // ===== GENERACIÓN DE QR CODES =====
+        // Función para generar QR codes usando la librería qrcode.js
+        function generateQRCode(content, size, elementId) {
+            if (!content || content.trim() === '') {
+                return '<div style="width: ' + size + 'px; height: ' + size + 'px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666;">Sin contenido</div>';
+            }
+
+            const qrSize = Math.min(size - 4, 200);
+            const options = {
+                text: content,
+                width: qrSize,
+                height: qrSize,
+                colorDark: '#000000',
+                colorLight: '#FFFFFF',
+                correctLevel: QRCode.CorrectLevel.M
+            };
+
+            try {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.display = 'none';
+                document.body.appendChild(tempDiv);
+                
+                new QRCode(tempDiv, options);
+                
+                const qrCanvas = tempDiv.querySelector('canvas');
+                if (qrCanvas) {
+                    document.body.removeChild(tempDiv);
+                    return qrCanvas.outerHTML;
+                } else {
+                    document.body.removeChild(tempDiv);
+                    throw new Error('No se pudo generar el canvas del QR');
+                }
+            } catch (error) {
+                console.error('Error en generateQRCode:', error);
+                return '<div style="width: ' + size + 'px; height: ' + size + 'px; background: #ffcccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #cc0000; border: 1px solid #cc0000;">Error QR</div>';
+            }
+        }
+        
+        // Función para generar todos los QR codes
+        function generateAllQRCodes() {
+            console.log('Generando QR codes en HTML exportado...');
+            const qrElements = document.querySelectorAll('[id^="qr-"]');
+            console.log('Elementos QR encontrados:', qrElements.length);
+            qrElements.forEach(element => {
+                const content = element.getAttribute('data-content');
+                const size = parseInt(element.getAttribute('data-size'));
+                // Procesar el contenido del QR con los datos JSON
+                const processedContent = replaceTextPlaceholders(content, ticketData);
+                console.log('Generando QR para:', content, 'procesado:', processedContent, 'tamaño:', size);
+                
+                if (!processedContent || processedContent.trim() === '') {
+                    element.innerHTML = '<div style="width: ' + size + 'px; height: ' + size + 'px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666;">Sin contenido</div>';
+                    return;
+                }
+
+                const qrSize = Math.min(size - 4, 200);
+                const options = {
+                    text: processedContent,
+                    width: qrSize,
+                    height: qrSize,
+                    colorDark: '#000000',
+                    colorLight: '#FFFFFF',
+                    correctLevel: QRCode.CorrectLevel.M
+                };
+
+                try {
+                    new QRCode(element, options);
+                    console.log('QR generado exitosamente para:', processedContent);
+                } catch (error) {
+                    console.error('Error generando QR:', error);
+                    element.innerHTML = '<div style="width: ' + size + 'px; height: ' + size + 'px; background: #ffcccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #cc0000; border: 1px solid #cc0000;">Error QR</div>';
+                }
+            });
+        }
+        
         // Función principal para procesar toda la plantilla
         function processTicketTemplate(data) {
             ticketData = data;
@@ -2122,6 +2304,9 @@ export default function TicketEditor() {
               }
               return '';
             }).join('\n            ')}
+            
+            // Generar todos los QR codes
+            generateAllQRCodes();
             
             // Ajustar posiciones relativas después de que las tablas se llenen
             setTimeout(adjustRelativePositions, 200);
@@ -2215,11 +2400,19 @@ export default function TicketEditor() {
                  // Descomenta las siguientes líneas para usar datos de ejemplo:
          
          const datosEjemplo = @@JSON@@;
-         document.addEventListener('DOMContentLoaded', function() {
-             processTicketTemplate(datosEjemplo);
-             // Ajustar posiciones después de procesar la plantilla
-             setTimeout(adjustRelativePositions, 200);
-         });
+         
+         // Función para inicializar QR y procesar la plantilla
+         function initializeQRAndProcess() {
+             if (typeof QRCode !== 'undefined') {
+                 processTicketTemplate(datosEjemplo);
+                 // Ajustar posiciones después de procesar la plantilla
+                 setTimeout(adjustRelativePositions, 200);
+             } else {
+                 setTimeout(initializeQRAndProcess, 100);
+             }
+         }
+         
+         document.addEventListener('DOMContentLoaded', initializeQRAndProcess);
          
     </script>
 </body>
@@ -2990,222 +3183,232 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
       <div className="flex h-screen">
         {/* Barra lateral de herramientas */}
-        <div className="w-86 bg-white shadow-lg p-4 overflow-y-auto">
-          <h2 className="text-lg font-bold mb-4 text-black">Editor de Tickets</h2>
-          
-          {/* Configuración de ancho */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2 text-black">Ancho del ticket:</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={ticketWidth}
-                onChange={(e) => setTicketWidth(Number(e.target.value))}
-                className="flex-1 px-3 py-2 border rounded text-black"
-                min="50"
-                max="1000"
-              />
-              <select
-                value={widthUnit}
-                onChange={(e) => handleUnitChange(e.target.value as 'px' | 'in' | 'cm')}
-                className="px-3 py-2 border rounded text-black"
-              >
-                <option value="px">px</option>
-                <option value="in">pulgadas</option>
-                <option value="cm">cm</option>
-              </select>
-            </div>
-            <div className="text-xs text-black mt-1">
-              Ancho actual: {convertWidth(ticketWidth, widthUnit).toFixed(0)}px
-              {widthUnit !== 'px' && (
-                <span className="text-blue-600 ml-2">
-                  ({ticketWidth.toFixed(2)} {widthUnit})
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-gray-600 mt-1 group relative">
-                                      <span className="cursor-help flex items-center gap-1">
-                          <Info size={12} />
-                          Al cambiar la unidad, el valor se convierte automáticamente
-                        </span>
-              <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                📏 Conversiones: 1 pulgada = 96px, 1 cm = 37.795px
-                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+        <div className="w-86 bg-gradient-to-b from-gray-50 to-white shadow-xl border-r border-gray-200 overflow-y-auto">
+          {/* Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <FileText size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Editor de Tickets</h2>
+                <p className="text-xs text-gray-500">Diseña tu ticket personalizado</p>
               </div>
             </div>
-            {isConverting && (
-              <div className="text-xs text-green-600 mt-1 animate-pulse">
-                🔄 Convirtiendo elementos...
-              </div>
-            )}
           </div>
 
-          {/* Carga de JSON */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2 text-black">Cargar datos JSON:</label>
-            
-            {/* Selector de archivo personalizado */}
-            <div className="relative">
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleJsonUpload}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                id="json-file-input"
-              />
-              <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 cursor-pointer group"
-                onDragOver={handleJsonDragOver}
-                onDrop={handleJsonDrop}
-              >
-                <div className="flex flex-col items-center space-y-2">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
+          <div className="p-4 space-y-6">
+            {/* Sección 1: Configuración del Ticket */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Settings size={16} className="text-blue-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Configuración del Ticket</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium mb-2 text-gray-700">Ancho del ticket:</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={ticketWidth}
+                      onChange={(e) => setTicketWidth(Number(e.target.value))}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      min="50"
+                      max="1000"
+                    />
+                    <select
+                      value={widthUnit}
+                      onChange={(e) => handleUnitChange(e.target.value as 'px' | 'in' | 'cm')}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="px">px</option>
+                      <option value="in">pulgadas</option>
+                      <option value="cm">cm</option>
+                    </select>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
-                      Seleccionar archivo JSON
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Arrastra aquí o haz clic para buscar
-                    </p>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Ancho actual: <span className="font-medium">{convertWidth(ticketWidth, widthUnit).toFixed(0)}px</span>
+                    {widthUnit !== 'px' && (
+                      <span className="text-blue-600 ml-2">
+                        ({ticketWidth.toFixed(2)} {widthUnit})
+                      </span>
+                    )}
                   </div>
+                  <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <Info size={12} />
+                    Al cambiar la unidad, el valor se convierte automáticamente
+                  </div>
+                  {isConverting && (
+                    <div className="text-xs text-green-600 mt-1 animate-pulse flex items-center gap-1">
+                      <RefreshCw size={12} className="animate-spin" />
+                      Convirtiendo elementos...
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Estado del archivo cargado */}
-            {hasCustomJson && (
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center space-x-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+            {/* Sección 2: Datos JSON */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Database size={16} className="text-green-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Datos JSON</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleJsonUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    id="json-file-input"
+                  />
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 hover:bg-green-50 transition-all duration-200 cursor-pointer group"
+                    onDragOver={handleJsonDragOver}
+                    onDrop={handleJsonDrop}
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                        <Upload size={20} className="text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 group-hover:text-green-700 transition-colors">
+                          Seleccionar archivo JSON
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Arrastra aquí o haz clic para buscar
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-sm text-green-700 font-medium">JSON cargado correctamente</span>
+                  
+                  {hasCustomJson && (
+                    <div className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                      <Check size={12} />
+                      Archivo JSON cargado correctamente
+                    </div>
+                  )}
+                  
+                  {currentJsonData && !hasCustomJson && (
+                    <div className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                      <Info size={12} />
+                      Usando datos de ejemplo
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sección 3: Elementos */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Plus size={16} className="text-purple-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Elementos</h3>
+              </div>
+              
+              <div className="space-y-2">
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'text')}
+                  className="p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-move hover:bg-blue-100 transition-colors text-black font-medium flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                    <FileText size={16} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Etiqueta de texto</p>
+                    <p className="text-xs text-gray-500">Texto con formato y variables</p>
+                  </div>
                 </div>
                 
-                <button
-                  onClick={() => setShowJsonViewer(!showJsonViewer)}
-                  className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-2 ${
-                    showJsonViewer 
-                      ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-md' 
-                      : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
-                  }`}
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'table')}
+                  className="p-3 bg-green-50 border border-green-200 rounded-lg cursor-move hover:bg-green-100 transition-colors text-black font-medium flex items-center gap-3 group"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>{showJsonViewer ? 'Ocultar Propiedades' : 'Ver Propiedades JSON'}</span>
-                </button>
-              </div>
-            )}
-
-            {/* Enlace de ejemplo */}
-            <div className="mt-3">
-              <a 
-                href="/ejemplo-datos.json" 
-                download
-                className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group"
-              >
-                <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>Descargar ejemplo JSON</span>
-          </a>
-        </div>
-          </div>
-
-          {/* Herramientas de posicionamiento */}
-          <div className="mb-6">
-            <h3 className="text-sm font-medium mb-2 text-black">Posicionamiento:</h3>
-            <button
-              onClick={() => setRelativeMode(!relativeMode)}
-              className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                relativeMode 
-                  ? 'bg-green-500 text-white hover:bg-green-600 shadow-md' 
-                  : 'bg-gray-500 text-white hover:bg-gray-600 shadow-md'
-              }`}
-            >
-              {relativeMode ? '✓ Modo Relativo Activo' : '🔗 Activar Posicionamiento Relativo'}
-            </button>
-            {relativeMode && (
-              <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800">
-                <div className="flex items-start space-x-2">
-                  <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                    <Table size={16} className="text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Tabla</p>
+                    <p className="text-xs text-gray-500">Datos dinámicos en formato tabla</p>
+                  </div>
+                </div>
+                
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'qr')}
+                  className="p-3 bg-purple-50 border border-purple-200 rounded-lg cursor-move hover:bg-purple-100 transition-colors text-black font-medium flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                    <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 11h6v6H3v-6zm2 2v2h2v-2H5zm8 2h6v6h-6v-6zm2 2v2h2v-2h-2z"/>
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium mb-1">Modo relativo activo</p>
-                    <ul className="space-y-1 text-green-700">
-                      <li>• Los nuevos elementos se posicionan automáticamente</li>
-                      <li>• Se colocan debajo del último elemento</li>
-                      <li>• Mover un elemento actualiza los relacionados</li>
-                      <li>• Configurar relaciones en las propiedades</li>
-                    </ul>
+                    <p className="text-sm font-medium">Código QR</p>
+                    <p className="text-xs text-gray-500">Genera códigos QR dinámicos</p>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Instrucciones de movimiento con teclado */}
-          <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <h3 className="text-sm font-medium mb-2 text-yellow-800 flex items-center gap-2">
-              <Keyboard size={16} />
-              Movimiento con teclado:
-            </h3>
-            <div className="text-xs text-yellow-700 space-y-1">
-              <div>• <strong>Flechas:</strong> Mover elemento seleccionado 5px</div>
-              <div>• <strong>Shift + Flechas:</strong> Cambiar tamaño del elemento seleccionado</div>
-              <div>• <strong>Selecciona un elemento</strong> para activar</div>
             </div>
-          </div>
 
-          {/* Herramientas */}
-          <div className="mb-6">
-            <h3 className="text-sm font-medium mb-2 text-black">Elementos:</h3>
-            
-            {/* Elementos arrastrables */}
-            <div className="space-y-2">
-              <div
-                draggable
-                onDragStart={(e) => handleDragStart(e, 'text')}
-                className="p-3 bg-blue-100 border border-blue-300 rounded cursor-move hover:bg-blue-200 transition-colors text-black font-medium flex items-center gap-2"
-              >
-                <FileText size={20} />
-                Etiqueta de texto
+            {/* Sección 4: Atajos de Teclado */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Keyboard size={16} className="text-orange-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Atajos de Teclado</h3>
               </div>
-              <div
-                draggable
-                onDragStart={(e) => handleDragStart(e, 'table')}
-                className="p-3 bg-green-100 border border-green-300 rounded cursor-move hover:bg-green-200 transition-colors text-black font-medium flex items-center gap-2"
-              >
-                <Table size={20} />
-                Tabla
+              
+              <div className="space-y-2 text-xs text-gray-700">
+                <div className="flex justify-between items-center">
+                  <span>Mover elemento:</span>
+                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">Flechas</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Redimensionar:</span>
+                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">Shift + Flechas</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Zoom:</span>
+                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">Ctrl + Scroll</span>
+                </div>
               </div>
             </div>
-          </div>
 
-
-
-          {/* Información */}
-          <div className="text-xs text-gray-600">
-            <p className="mb-2"><strong>Instrucciones:</strong></p>
-            <ul className="space-y-1">
-              <li>• Arrastra elementos al área de diseño</li>
-              <li>• Haz clic para seleccionar elementos</li>
-              <li>• Arrastra para mover elementos</li>
-              <li>• Usa las esquinas para redimensionar</li>
-              <li>• Haz clic en tablas para configurar</li>
-            </ul>
-            
-           
+            {/* Sección 5: Información */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <HelpCircle size={16} className="text-gray-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Instrucciones</h3>
+              </div>
+              
+              <div className="space-y-2 text-xs text-gray-600">
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Arrastra elementos al área de diseño</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Haz clic para seleccionar elementos</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Arrastra para mover elementos</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Usa las esquinas para redimensionar</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Haz clic en tablas para configurar</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -4195,6 +4398,76 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                       </div>
                     </div>
                   )}
+
+                  {element.type === 'qr' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Contenido del QR:</label>
+                        <textarea
+                          value={element.content}
+                          onChange={(e) => updateElement(selectedElement, { content: e.target.value })}
+                          className="w-full px-3 py-2 border rounded text-black"
+                          rows={3}
+                          placeholder="URL, texto, o datos para el código QR..."
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Tamaño del QR:</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            value={element.width}
+                            onChange={(e) => updateElement(selectedElement, { 
+                              width: Number(e.target.value),
+                              height: Number(e.target.value) // Mantener cuadrado
+                            })}
+                            className="flex-1"
+                          />
+                          <span className="text-sm text-black w-12">
+                            {element.width}px
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Propiedades JSON disponibles:</label>
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const currentContent = element.content;
+                              const newContent = currentContent + `{{${e.target.value}}}`;
+                              updateElement(selectedElement, { content: newContent });
+                            }
+                          }}
+                          className="w-full px-3 py-2 border rounded text-black"
+                          defaultValue=""
+                        >
+                          <option value="">Seleccionar propiedad...</option>
+                          {currentJsonData && generateJsonPaths(currentJsonData).map(path => (
+                            <option key={path} value={path}>{path}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 11h6v6H3v-6zm2 2v2h2v-2H5zm8 2h6v6h-6v-6zm2 2v2h2v-2h-2z"/>
+                          </svg>
+                          <span className="text-sm font-medium text-purple-800">Información del QR</span>
+                        </div>
+                        <div className="text-xs text-purple-700 space-y-1">
+                          <div>• El código QR se genera automáticamente</div>
+                          <div>• Soporta URLs, texto y datos JSON</div>
+                          <div>• Tamaño recomendado: 100-150px</div>
+                          <div>• Se mantiene cuadrado automáticamente</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -4376,6 +4649,28 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         </div>
                       )}
                     </div>
+                  ) : element.type === 'qr' ? (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <div className="w-full h-full flex items-center justify-center bg-white border border-gray-300 rounded">
+                        <div className="text-center">
+                          <div className="w-8 h-8 mx-auto mb-1 bg-purple-100 rounded flex items-center justify-center">
+                            <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 11h6v6H3v-6zm2 2v2h2v-2H5zm8 2h6v6h-6v-6zm2 2v2h2v-2h-2z"/>
+                            </svg>
+                          </div>
+                          <div className="text-xs text-gray-600 font-medium">QR Code</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {element.content || "Contenido del QR"}
+                          </div>
+                        </div>
+                      </div>
+                      {element.content.includes('{{') && (
+                        <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                          <Braces size={10} />
+                          JSON
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div 
                       className="text-xs h-full flex items-center justify-center text-black font-medium"
@@ -4440,6 +4735,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   border: 'none',
                   backgroundColor: 'white'
                 }}
+                
                 title="Vista previa del ticket"
                 sandbox="allow-scripts allow-same-origin"
               />
