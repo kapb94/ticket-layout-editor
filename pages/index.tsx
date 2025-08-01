@@ -55,12 +55,13 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Ruler,
-  Layers
+  Layers,
+  Image
 } from 'lucide-react';
 
 interface TicketElement {
   id: string;
-  type: 'text' | 'table' | 'qr';
+  type: 'text' | 'table' | 'qr' | 'image';
   x: number;
   y: number;
   width: number;
@@ -109,6 +110,14 @@ interface TableConfig {
   showBorders?: boolean;
   showHeader?: boolean;
   showHeaderBackground?: boolean;
+}
+
+interface ImageConfig {
+  base64Data?: string;
+  originalName?: string;
+  mimeType?: string;
+  maintainAspectRatio?: boolean;
+  objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
 }
 
 // Interfaz para la configuración completa del proyecto
@@ -164,6 +173,7 @@ export default function TicketEditor() {
   const [showElementsMenu, setShowElementsMenu] = useState(false);
   const [showSizeMenu, setShowSizeMenu] = useState(false);
   const [showInfoMenu, setShowInfoMenu] = useState(false);
+  const [previewHTML, setPreviewHTML] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const projectFileInputRef = useRef<HTMLInputElement>(null);
@@ -299,7 +309,16 @@ export default function TicketEditor() {
   // Actualizar posiciones relativas cuando cambien los elementos
   useEffect(() => {
     updateRelativePositions();
-  }, [elements]); // Se ejecuta cuando cambian los elementos (posiciones, tamaños, etc.)
+  }, [elements]);
+
+  // Actualizar preview HTML cuando cambien los elementos o datos JSON
+  useEffect(() => {
+    if (showPreview) {
+      generatePreviewHTML().then(html => {
+        setPreviewHTML(html);
+      });
+    }
+  }, [elements, currentJsonData, showPreview]); // Se ejecuta cuando cambian los elementos (posiciones, tamaños, etc.)
 
   // Manejar movimiento y redimensionado con teclado
   useEffect(() => {
@@ -511,7 +530,7 @@ export default function TicketEditor() {
     const elementType = e.dataTransfer.getData('text/plain');
     
     if (elementType.startsWith('new-')) {
-      const type = elementType.replace('new-', '') as 'text' | 'table' | 'qr';
+              const type = elementType.replace('new-', '') as 'text' | 'table' | 'qr' | 'image';
       const rect = canvasRef.current?.getBoundingClientRect();
       
       if (rect) {
@@ -544,9 +563,9 @@ export default function TicketEditor() {
           type,
           x: finalX,
           y: finalY,
-          width: type === 'text' ? 150 : type === 'qr' ? 100 : 200,
-          height: type === 'text' ? 30 : type === 'qr' ? 100 : 100,
-          content: type === 'text' ? 'Texto de ejemplo' : type === 'qr' ? 'https://ejemplo.com' : '',
+          width: type === 'text' ? 150 : type === 'qr' ? 100 : type === 'image' ? 150 : 200,
+          height: type === 'text' ? 30 : type === 'qr' ? 100 : type === 'image' ? 150 : 100,
+          content: type === 'text' ? 'Texto de ejemplo' : type === 'qr' ? 'https://ejemplo.com' : type === 'image' ? 'Seleccionar imagen...' : '',
           fontSize: type === 'text' ? 14 : 12,
           textAlign: type === 'text' ? 'left' : undefined,
           config: type === 'table' ? {
@@ -555,6 +574,12 @@ export default function TicketEditor() {
             fontSize: 12,
             showBorders: true,
             showHeader: true
+          } : type === 'image' ? {
+            base64Data: undefined,
+            originalName: undefined,
+            mimeType: undefined,
+            maintainAspectRatio: true,
+            objectFit: 'contain'
           } : undefined,
           ...relativeConfig
         };
@@ -666,7 +691,22 @@ export default function TicketEditor() {
     newWidth = Math.min(newWidth, maxWidth);
     newHeight = Math.min(newHeight, maxHeight);
 
-    updateElement(selectedElement, { width: newWidth, height: newHeight });
+    // Mantener proporción de aspecto para imágenes si está habilitado
+    if (element.type === 'image' && element.config?.maintainAspectRatio && element.width > 0 && element.height > 0) {
+      const aspectRatio = element.width / element.height;
+      const finalWidth = newWidth;
+      const finalHeight = finalWidth / aspectRatio;
+      
+      if (finalHeight <= maxHeight) {
+        updateElement(selectedElement, { width: finalWidth, height: finalHeight });
+      } else {
+        const adjustedHeight = maxHeight;
+        const adjustedWidth = adjustedHeight * aspectRatio;
+        updateElement(selectedElement, { width: adjustedWidth, height: adjustedHeight });
+      }
+    } else {
+      updateElement(selectedElement, { width: newWidth, height: newHeight });
+    }
   };
 
   const handleResizeEnd = () => {
@@ -690,7 +730,9 @@ export default function TicketEditor() {
       // Forzar re-render de la vista previa
       const previewContainer = document.querySelector('[data-preview]');
       if (previewContainer) {
-        previewContainer.innerHTML = generatePreviewHTML();
+        generatePreviewHTML().then(html => {
+          previewContainer.innerHTML = html;
+        });
       }
     }
   }, [elements, currentJsonData, ticketWidth, widthUnit, showPreview]);
@@ -1253,7 +1295,7 @@ export default function TicketEditor() {
 
 
 
-  const generatePreviewHTML = () => {
+  const generatePreviewHTML = async () => {
     const widthPx = convertWidth(ticketWidth, widthUnit);
     const contentHeight = calculateContentHeight();
     const elementsWithRelativePositions = getElementsWithRelativePositions();
@@ -1334,7 +1376,7 @@ export default function TicketEditor() {
 <body>
     <div class="ticket">`;
 
-    elementsWithRelativePositions.forEach(element => {
+    for (const element of elementsWithRelativePositions) {
       const heightStyle = element.type === 'table' ? `min-height: ${element.height}px; height: auto;` : `height: ${element.height}px;`;
       const style = `left: ${element.x}px; top: ${element.y}px; width: ${element.width}px; ${heightStyle}`;
       const fontSize = element.fontSize || (element.type === 'text' ? 14 : 12);
@@ -1378,8 +1420,22 @@ export default function TicketEditor() {
         <div class="element" data-element-id="${element.id}" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; display: flex; align-items: center; justify-content: center;">
             <div class="qr-code" id="qr-${element.id}" data-content="${processedContent}" data-size="${element.width}"></div>
         </div>`;
+      } else if (element.type === 'image') {
+        const objectFit = element.config?.objectFit || 'contain';
+        const optimizedImageData = await getOptimizedImageData(element, true); // true = para exportación/preview
+        if (optimizedImageData) {
+          html += `
+        <div class="element" data-element-id="${element.id}" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; display: flex; align-items: center; justify-content: center;">
+            <img src="${optimizedImageData}" alt="${element.config?.originalName || 'Imagen'}" style="width: 100%; height: 100%; object-fit: ${objectFit};" />
+        </div>`;
+        } else {
+          html += `
+        <div class="element" data-element-id="${element.id}" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; display: flex; align-items: center; justify-content: center; background-color: #f0f0f0; color: #666; font-size: 10px; text-align: center;">
+            Sin imagen
+        </div>`;
+        }
       }
-    });
+    }
 
     html += `
     </div>
@@ -1773,7 +1829,7 @@ export default function TicketEditor() {
     return html;
   };
 
-  const generateHTML = () => {
+  const generateHTML = async () => {
     const widthPx = convertWidth(ticketWidth, widthUnit);
     const contentHeight = calculateContentHeight();
     const elementsWithRelativePositions = getElementsWithRelativePositions();
@@ -1848,7 +1904,7 @@ export default function TicketEditor() {
 <body>
     <div class="ticket">`;
 
-    elementsWithRelativePositions.forEach(element => {
+    for (const element of elementsWithRelativePositions) {
       const heightStyle = element.type === 'table' ? `min-height: ${element.height}px; height: auto;` : `height: ${element.height}px;`;
       const style = `left: ${element.x}px; top: ${element.y}px; width: ${element.width}px; ${heightStyle}`;
       const fontSize = element.fontSize || (element.type === 'text' ? 14 : 12);
@@ -1887,8 +1943,22 @@ export default function TicketEditor() {
         <div class="element" data-element-id="${element.id}" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; display: flex; align-items: center; justify-content: center;">
             <div class="qr-code" id="qr-${element.id}" data-content="${templateContent}" data-size="${element.width}"></div>
         </div>`;
+      } else if (element.type === 'image') {
+        const objectFit = element.config?.objectFit || 'contain';
+        const optimizedImageData = await getOptimizedImageData(element, true); // true = para exportación/preview
+        if (optimizedImageData) {
+          html += `
+        <div class="element" data-element-id="${element.id}" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; display: flex; align-items: center; justify-content: center;">
+            <img src="${optimizedImageData}" alt="${element.config?.originalName || 'Imagen'}" style="width: 100%; height: 100%; object-fit: ${objectFit};" />
+        </div>`;
+        } else {
+          html += `
+        <div class="element" data-element-id="${element.id}" style="${style} position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; display: flex; align-items: center; justify-content: center; background-color: #f0f0f0; color: #666; font-size: 10px; text-align: center;">
+            Sin imagen
+        </div>`;
+        }
       }
-    });
+    }
 
     html += `\n    </div>
     <script>
@@ -3227,6 +3297,44 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
     URL.revokeObjectURL(url);
   };
 
+  const convertImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, elementId: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const base64Data = await convertImageToBase64(file);
+        const element = elements.find(el => el.id === elementId);
+        if (element) {
+          updateElement(elementId, {
+            content: file.name,
+            config: {
+              ...element.config,
+              base64Data,
+              originalName: file.name,
+              mimeType: file.type
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error al convertir imagen a base64:', error);
+        alert('Error al procesar la imagen. Inténtalo de nuevo.');
+      }
+    }
+    // Limpiar el input
+    e.target.value = '';
+  };
+
   // Funciones para redimensionamiento de sidebars
   const handleSidebarResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -3307,6 +3415,79 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
     setShowInfoMenu(!showInfoMenu);
     setShowSizeMenu(false);
     setShowElementsMenu(false);
+  };
+
+  // Función para optimizar imágenes para exportación/preview
+  const optimizeImageForExport = (base64Data: string, maxWidth: number = 800, maxHeight: number = 600, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = document.createElement('img') as HTMLImageElement;
+      img.onload = () => {
+        try {
+          // Crear canvas para redimensionar y comprimir
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            reject(new Error('No se pudo obtener el contexto del canvas'));
+            return;
+          }
+
+          // Calcular nuevas dimensiones manteniendo proporción
+          let { width, height } = img;
+          
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+
+          // Configurar canvas
+          canvas.width = width;
+          canvas.height = height;
+
+          // Dibujar imagen redimensionada
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convertir a base64 con compresión
+          const optimizedBase64 = canvas.toDataURL('image/jpeg', quality);
+          resolve(optimizedBase64);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Error al cargar la imagen para optimización'));
+      };
+      
+      img.src = base64Data;
+    });
+  };
+
+  // Función para obtener imagen optimizada (original o optimizada según el contexto)
+  const getOptimizedImageData = async (element: TicketElement, forExport: boolean = false): Promise<string | undefined> => {
+    if (!element.config?.base64Data) {
+      return undefined;
+    }
+
+    if (!forExport) {
+      // Para edición normal, usar la imagen original
+      return element.config.base64Data;
+    }
+
+    try {
+      // Para exportación/preview, optimizar la imagen
+      const optimizedData = await optimizeImageForExport(
+        element.config.base64Data,
+        Math.max(element.width * 2, 800), // Usar el doble del ancho del elemento o 800px como máximo
+        Math.max(element.height * 2, 600), // Usar el doble del alto del elemento o 600px como máximo
+        0.8 // Calidad del 80%
+      );
+      return optimizedData;
+    } catch (error) {
+      console.warn('Error al optimizar imagen, usando original:', error);
+      return element.config.base64Data; // Fallback a la imagen original
+    }
   };
 
   return (
@@ -3489,7 +3670,15 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
           </button>
           <button
-            onClick={generateHTML}
+            onClick={async () => {
+              try {
+                const html = await generateHTML();
+                triggerFileDownload(html, `${projectName || 'ticket'}.html`, 'text/html');
+              } catch (error) {
+                console.error('Error generating HTML:', error);
+                alert('Error al generar el HTML. Inténtalo de nuevo.');
+              }
+            }}
             className="p-2 bg-green-600 text-white rounded hover:bg-green-700 text-lg relative group"
           >
             <Save size={20} />
@@ -3658,6 +3847,17 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           </svg>
                         </div>
                         <span className="font-medium">Código QR</span>
+                      </div>
+                      
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'image')}
+                        className="p-2 bg-orange-50 border border-orange-200 rounded cursor-move hover:bg-orange-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
+                          <Image size={12} className="text-orange-600" />
+                        </div>
+                        <span className="font-medium">Imagen</span>
                       </div>
                     </div>
                     <button
@@ -3953,6 +4153,20 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                     <p className="text-xs text-gray-500">Genera códigos QR dinámicos</p>
                   </div>
                 </div>
+                
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'image')}
+                  className="p-3 bg-orange-50 border border-orange-200 rounded-lg cursor-move hover:bg-orange-100 transition-colors text-black font-medium flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                    <Image size={16} className="text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Imagen</p>
+                    <p className="text-xs text-gray-500">Imágenes convertidas a base64</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -4144,6 +4358,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               {el.type === 'text' ? `Texto: ${el.content.substring(0, 20)}...` : 
                                el.type === 'table' ? `Tabla: ${el.config?.columns?.length || 0} columnas` :
                                el.type === 'qr' ? `QR: ${el.content.substring(0, 20)}...` : 
+                               el.type === 'image' ? `Imagen: ${el.config?.originalName || el.content.substring(0, 20)}...` :
                                `${el.type}: ${el.content.substring(0, 20)}...`}
                             </option>
                           ))}
@@ -5184,6 +5399,118 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                       </div>
                     </div>
                   )}
+
+                  {element.type === 'image' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-black">Seleccionar imagen:</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, selectedElement)}
+                          className="w-full px-3 py-2 border rounded text-black text-sm"
+                        />
+                        {element.config?.originalName && (
+                          <div className="mt-2 text-xs text-gray-600">
+                            Archivo: {element.config.originalName}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {element.config?.base64Data && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-black">Vista previa:</label>
+                            <div className="border rounded p-2 bg-gray-50">
+                              <img
+                                src={element.config.base64Data}
+                                alt="Vista previa"
+                                className="max-w-full max-h-32 object-contain mx-auto"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-black">Tamaño:</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs text-gray-600 mb-1">Ancho:</label>
+                                <input
+                                  type="number"
+                                  value={element.width}
+                                  onChange={(e) => updateElement(selectedElement, { width: Number(e.target.value) })}
+                                  className="w-full px-2 py-1 border rounded text-xs text-black"
+                                  min="10"
+                                  max="500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-600 mb-1">Alto:</label>
+                                <input
+                                  type="number"
+                                  value={element.height}
+                                  onChange={(e) => updateElement(selectedElement, { height: Number(e.target.value) })}
+                                  className="w-full px-2 py-1 border rounded text-xs text-black"
+                                  min="10"
+                                  max="500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-black">Ajuste de imagen:</label>
+                            <select
+                              value={element.config?.objectFit || 'contain'}
+                              onChange={(e) => updateElement(selectedElement, {
+                                config: {
+                                  ...element.config,
+                                  objectFit: e.target.value as 'contain' | 'cover' | 'fill' | 'none' | 'scale-down'
+                                }
+                              })}
+                              className="w-full px-3 py-2 border rounded text-black"
+                            >
+                              <option value="contain">Contener (mantener proporción)</option>
+                              <option value="cover">Cubrir (cortar si es necesario)</option>
+                              <option value="fill">Llenar (estirar)</option>
+                              <option value="none">Ninguno (tamaño original)</option>
+                              <option value="scale-down">Reducir (si es necesario)</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="flex items-center gap-2 text-sm font-medium mb-2 text-black">
+                              <input
+                                type="checkbox"
+                                checked={element.config?.maintainAspectRatio !== false}
+                                onChange={(e) => updateElement(selectedElement, {
+                                  config: {
+                                    ...element.config,
+                                    maintainAspectRatio: e.target.checked
+                                  }
+                                })}
+                                className="rounded"
+                              />
+                              Mantener proporción al redimensionar
+                            </label>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Image size={16} className="text-orange-600" />
+                          <span className="text-sm font-medium text-orange-800">Información de la imagen</span>
+                        </div>
+                        <div className="text-xs text-orange-700 space-y-1">
+                          <div>• La imagen se convierte a base64 automáticamente</div>
+                          <div>• No requiere archivos externos</div>
+                          <div>• Formatos soportados: JPG, PNG, GIF, WebP</div>
+                          <div>• Tamaño recomendado: 150-300px</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -5324,6 +5651,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         if (relativeElement?.type === 'text') return 'Texto';
                         if (relativeElement?.type === 'table') return 'Tabla';
                         if (relativeElement?.type === 'qr') return 'QR';
+                        if (relativeElement?.type === 'image') return 'Imagen';
                         return relativeElement?.type || 'Elemento';
                       })()}
                     </div>
@@ -5392,6 +5720,31 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         </div>
                       )}
                     </div>
+                  ) : element.type === 'image' ? (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      {element.config?.base64Data ? (
+                        <img
+                          src={element.config.base64Data}
+                          alt={element.config.originalName || "Imagen"}
+                          className="w-full h-full"
+                          style={{
+                            objectFit: element.config?.objectFit || 'contain'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-white border border-gray-300 rounded">
+                          <div className="text-center">
+                            <div className="w-8 h-8 mx-auto mb-1 bg-orange-100 rounded flex items-center justify-center">
+                              <Image size={16} className="text-orange-600" />
+                            </div>
+                            <div className="text-xs text-gray-600 font-medium">Imagen</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {element.content || "Seleccionar imagen..."}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div 
                       className="text-xs h-full flex items-center justify-center text-black font-medium"
@@ -5457,7 +5810,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
             <div className="flex justify-center items-center border border-gray-300 rounded p-2 bg-gray-50">
               <iframe
-                srcDoc={generatePreviewHTML()}
+                srcDoc={previewHTML}
                 className="w-full"
                 style={{ 
                   height: `${Math.min(calculateContentHeight() + 100, 600)}px`,
