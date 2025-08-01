@@ -3467,7 +3467,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             className={`p-2 rounded text-lg transition-colors relative group ${
               showPreview 
                 ? 'bg-orange-600 text-white hover:bg-orange-700' 
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-600 text-white hover:bg-gray-700'
             }`}
           >
             <Eye size={20} />
