@@ -1,5 +1,57 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
+import { 
+  Eye, 
+  Save, 
+  Trash2, 
+  BookOpen, 
+  Download, 
+  Upload, 
+  ZoomIn, 
+  ZoomOut, 
+  RotateCcw, 
+  FileText, 
+  Table, 
+  Settings, 
+  Code, 
+  Copy, 
+  ArrowUp, 
+  ArrowDown, 
+  ArrowLeft,
+  ArrowRight,
+  X, 
+  Move, 
+  Maximize2, 
+  Minus, 
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  AlertCircle,
+  Info,
+  HelpCircle,
+  GripVertical,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Bold,
+  Italic,
+  Type,
+  Database,
+  Braces,
+  Hash,
+  Keyboard,
+  CornerUpLeft,
+  CornerUpRight,
+  CornerDownLeft,
+  CornerDownRight,
+  Circle,
+  FolderOpen,
+  RefreshCw,
+  ClipboardList,
+  Bug
+} from 'lucide-react';
 
 interface TicketElement {
   id: string;
@@ -84,6 +136,7 @@ export default function TicketEditor() {
   const [showDebug, setShowDebug] = useState(false);
   const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
   const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Datos JSON por defecto (hardcodeados)
@@ -2754,6 +2807,27 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
     setIsDraggingColumn(false);
   };
 
+  // Funciones para manejar el zoom
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.25, 3)); // Máximo 300%
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.25, 0.25)); // Mínimo 25%
+  };
+
+  const handleZoomReset = () => {
+    setZoomLevel(1);
+  };
+
+  const handleWheelZoom = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setZoomLevel(prev => Math.max(0.25, Math.min(3, prev + delta)));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Head>
@@ -2772,7 +2846,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             }`}
             title={showPreview ? 'Ocultar Vista Previa' : 'Mostrar Vista Previa'}
           >
-            👁️
+            <Eye size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               {showPreview ? 'Ocultar Vista Previa' : 'Mostrar Vista Previa'}
             </div>
@@ -2783,7 +2857,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             className="p-2 bg-green-600 text-white rounded hover:bg-green-700 text-lg relative group"
             title="Generar Plantilla HTML"
           >
-            💾
+            <Save size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               Generar Plantilla HTML
             </div>
@@ -2794,7 +2868,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             className="p-2 bg-red-600 text-white rounded hover:bg-red-700 text-lg relative group"
             title="Limpiar Todo"
           >
-            🗑️
+            <Trash2 size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               Limpiar Todo
             </div>
@@ -2805,7 +2879,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-lg relative group"
             title="Ejemplo de uso"
           >
-            📚
+            <BookOpen size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               Ejemplo de uso
             </div>
@@ -2817,7 +2891,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-lg relative group"
             title="Exportar Proyecto"
           >
-            💾
+            <Download size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               Exportar Proyecto
             </div>
@@ -2832,9 +2906,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               title="Importar Proyecto"
             />
             <button
-              className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-lg"
+              className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-lg flex items-center justify-center"
             >
-              📂
+              <FolderOpen size={20} />
             </button>
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               Importar Proyecto
@@ -2864,10 +2938,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 }
               }
             }}
-            className="p-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-lg relative group"
+            className="p-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-lg relative group flex items-center justify-center"
             title="Actualizar Tablas"
           >
-            🔄
+            <RefreshCw size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               Actualizar Tablas
             </div>
@@ -2888,10 +2962,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 }
               }
             }}
-            className="p-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-lg relative group"
+            className="p-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-lg relative group flex items-center justify-center"
             title="Ver Logs"
           >
-            📋
+            <ClipboardList size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               Ver Logs
             </div>
@@ -2899,14 +2973,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
           
           <button
             onClick={() => setShowDebug(!showDebug)}
-            className={`p-2 rounded text-lg relative group transition-colors ${
+            className={`p-2 rounded text-lg relative group transition-colors flex items-center justify-center ${
               showDebug 
                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
                 : 'bg-gray-600 text-white hover:bg-gray-700'
             }`}
             title={showDebug ? 'Ocultar Debugging' : 'Mostrar Debugging'}
           >
-            🐛
+            <Bug size={20} />
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               {showDebug ? 'Ocultar Debugging' : 'Mostrar Debugging'}
             </div>
@@ -2950,7 +3024,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               )}
             </div>
             <div className="text-xs text-gray-600 mt-1 group relative">
-              <span className="cursor-help">💡 Al cambiar la unidad, el valor se convierte automáticamente</span>
+                                      <span className="cursor-help flex items-center gap-1">
+                          <Info size={12} />
+                          Al cambiar la unidad, el valor se convierte automáticamente
+                        </span>
               <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 📏 Conversiones: 1 pulgada = 96px, 1 cm = 37.795px
                 <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
@@ -3079,7 +3156,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
           {/* Instrucciones de movimiento con teclado */}
           <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <h3 className="text-sm font-medium mb-2 text-yellow-800">⌨️ Movimiento con teclado:</h3>
+            <h3 className="text-sm font-medium mb-2 text-yellow-800 flex items-center gap-2">
+              <Keyboard size={16} />
+              Movimiento con teclado:
+            </h3>
             <div className="text-xs text-yellow-700 space-y-1">
               <div>• <strong>Flechas:</strong> Mover elemento seleccionado 5px</div>
               <div>• <strong>Shift + Flechas:</strong> Cambiar tamaño del elemento seleccionado</div>
@@ -3096,16 +3176,18 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               <div
                 draggable
                 onDragStart={(e) => handleDragStart(e, 'text')}
-                className="p-3 bg-blue-100 border border-blue-300 rounded cursor-move hover:bg-blue-200 transition-colors text-black font-medium"
+                className="p-3 bg-blue-100 border border-blue-300 rounded cursor-move hover:bg-blue-200 transition-colors text-black font-medium flex items-center gap-2"
               >
-                📝 Etiqueta de texto
+                <FileText size={20} />
+                Etiqueta de texto
               </div>
               <div
                 draggable
                 onDragStart={(e) => handleDragStart(e, 'table')}
-                className="p-3 bg-green-100 border border-green-300 rounded cursor-move hover:bg-green-200 transition-colors text-black font-medium"
+                className="p-3 bg-green-100 border border-green-300 rounded cursor-move hover:bg-green-200 transition-colors text-black font-medium flex items-center gap-2"
               >
-                📊 Tabla
+                <Table size={20} />
+                Tabla
               </div>
             </div>
           </div>
@@ -3137,10 +3219,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   setShowProperties(false);
                   setSelectedElement(null);
                 }}
-                className="text-gray-500 hover:text-gray-700 text-xl font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
+                className="text-gray-500 hover:text-gray-700 w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
                 title="Cerrar"
               >
-                ×
+                <X size={16} />
               </button>
             </div>
             
@@ -3266,15 +3348,15 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                 }`}
                                 title={pos.replace('-', ' ')}
                               >
-                                {pos === 'top-left' && '↖'}
-                                {pos === 'above' && '↑'}
-                                {pos === 'top-right' && '↗'}
-                                {pos === 'left' && '←'}
-                                {pos === 'center' && '•'}
-                                {pos === 'right' && '→'}
-                                {pos === 'bottom-left' && '↙'}
-                                {pos === 'below' && '↓'}
-                                {pos === 'bottom-right' && '↘'}
+                                {pos === 'top-left' && <CornerUpLeft size={14} />}
+                                {pos === 'above' && <ArrowUp size={14} />}
+                                {pos === 'top-right' && <CornerUpRight size={14} />}
+                                {pos === 'left' && <ArrowLeft size={14} />}
+                                {pos === 'center' && <Circle size={14} />}
+                                {pos === 'right' && <ArrowRight size={14} />}
+                                {pos === 'bottom-left' && <CornerDownLeft size={14} />}
+                                {pos === 'below' && <ArrowDown size={14} />}
+                                {pos === 'bottom-right' && <CornerDownRight size={14} />}
                               </button>
                             ))}
                           </div>
@@ -3362,14 +3444,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                             <button
                               key={align}
                               onClick={() => updateElementTextAlign(selectedElement, align)}
-                              className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
+                              className={`flex-1 px-2 py-1 text-xs rounded border transition-colors flex items-center justify-center ${
                                 element.textAlign === align 
                                   ? 'bg-blue-500 text-white border-blue-500' 
                                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                               }`}
                               title={`Alinear ${align === 'left' ? 'izquierda' : align === 'center' ? 'centro' : align === 'right' ? 'derecha' : 'justificar'}`}
                             >
-                              {align === 'left' ? '←' : align === 'center' ? '↔' : align === 'right' ? '→' : '⟷'}
+                              {align === 'left' ? <AlignLeft size={14} /> : align === 'center' ? <AlignCenter size={14} /> : align === 'right' ? <AlignRight size={14} /> : <AlignJustify size={14} />}
                             </button>
                           ))}
                         </div>
@@ -3567,8 +3649,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         <label className="block text-xs font-medium mb-1 text-black">
                           Columnas:
                         </label>
-                        <div className="text-xs text-blue-600 mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                          💡 <strong>Consejo:</strong> Puedes reordenar las columnas arrastrándolas o usando los botones ↑↓
+                        <div className="text-xs text-blue-600 mb-2 p-2 bg-blue-50 border border-blue-200 rounded flex items-center gap-2">
+                          <Info size={14} />
+                          <strong>Consejo:</strong> Puedes reordenar las columnas arrastrándolas o usando los botones ↑↓
                         </div>
                         {element.config?.columns?.length > 0 && (
                           <div className="text-xs text-green-600 mb-2">
@@ -3586,8 +3669,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                 <li key={index}>• {col.header} → {col.property}</li>
                               ))}
                             </ul>
-                            <div className="mt-1 text-gray-600">
-                              💡 Revisa la consola para ver los datos cargados
+                            <div className="mt-1 text-gray-600 flex items-center gap-1">
+                              <Info size={12} />
+                              Revisa la consola para ver los datos cargados
                             </div>
                           </div>
                         )}
@@ -3609,7 +3693,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1">
-                                <span className="text-xs text-gray-400 cursor-move mr-1" title="Arrastra para reordenar">⋮⋮</span>
+                                <GripVertical size={14} className="text-gray-400 cursor-move mr-1" />
                                 <span className="text-xs font-medium text-gray-700">Columna {index + 1}</span>
                                 <div className="flex gap-1">
                                   <button
@@ -3628,14 +3712,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                       }
                                     }}
                                     disabled={index === 0}
-                                    className={`px-1 py-0.5 rounded text-xs transition-colors ${
+                                    className={`px-1 py-0.5 rounded text-xs transition-colors flex items-center justify-center ${
                                       index === 0 
                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                                         : 'bg-blue-500 text-white hover:bg-blue-600'
                                     }`}
                                     title="Mover hacia arriba"
                                   >
-                                    ↑
+                                    <ArrowUp size={12} />
                                   </button>
                                   <button
                                     onClick={() => {
@@ -3653,14 +3737,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                       }
                                     }}
                                     disabled={index === (element.config?.columns || []).length - 1}
-                                    className={`px-1 py-0.5 rounded text-xs transition-colors ${
+                                    className={`px-1 py-0.5 rounded text-xs transition-colors flex items-center justify-center ${
                                       index === (element.config?.columns || []).length - 1 
                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                                         : 'bg-blue-500 text-white hover:bg-blue-600'
                                     }`}
                                     title="Mover hacia abajo"
                                   >
-                                    ↓
+                                    <ArrowDown size={12} />
                                   </button>
                                 </div>
                               </div>
@@ -3674,10 +3758,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                     } 
                                   });
                                 }}
-                                className="px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                                className="px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs flex items-center justify-center"
                                 title="Eliminar columna"
                               >
-                                ×
+                                <X size={12} />
                               </button>
                             </div>
                             <div className="space-y-1">
@@ -3738,14 +3822,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                             } 
                                           });
                                         }}
-                                        className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
+                                        className={`flex-1 px-2 py-1 text-xs rounded border transition-colors flex items-center justify-center ${
                                           column.textAlign === align 
                                             ? 'bg-blue-500 text-white border-blue-500' 
                                             : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                         }`}
                                         title={`Alinear ${align === 'left' ? 'izquierda' : align === 'center' ? 'centro' : 'derecha'}`}
                                       >
-                                        {align === 'left' ? '←' : align === 'center' ? '↔' : '→'}
+                                        {align === 'left' ? <AlignLeft size={14} /> : align === 'center' ? <AlignCenter size={14} /> : <AlignRight size={14} />}
                                       </button>
                                     ))}
                                   </div>
@@ -4140,20 +4224,54 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         {/* Área de diseño */}
         <div className="flex-1 p-4">
           <div className="bg-white rounded-lg shadow-lg p-4 h-full">
-            <h2 className="text-lg font-bold mb-4 text-black">Área de Diseño</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-black">Área de Diseño</h2>
+              
+              {/* Controles de zoom */}
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={handleZoomOut}
+                  className="px-2 py-1 bg-white rounded text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
+                  title="Zoom Out (Ctrl + Scroll)"
+                >
+                  <ZoomOut size={16} />
+                </button>
+                <span className="px-2 py-1 text-sm font-medium text-gray-700 min-w-[60px] text-center">
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+                <button
+                  onClick={handleZoomIn}
+                  className="px-2 py-1 bg-white rounded text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
+                  title="Zoom In (Ctrl + Scroll)"
+                >
+                  <ZoomIn size={16} />
+                </button>
+                <button
+                  onClick={handleZoomReset}
+                  className="px-2 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors flex items-center justify-center"
+                  title="Reset Zoom"
+                >
+                  <RotateCcw size={16} />
+                </button>
+              </div>
+            </div>
             
-            <div
-              ref={canvasRef}
-              className="border-2 border-dashed border-gray-300 bg-gray-50 relative"
-              style={{ 
-                width: `${convertWidth(ticketWidth, widthUnit)}px`,
-                height: '600px',
-                margin: '0 auto'
-              }}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onClick={handleCanvasClick}
-            >
+            <div className="overflow-auto border border-gray-200 rounded" style={{ height: 'calc(100vh - 200px)' }}>
+              <div
+                ref={canvasRef}
+                className="border-2 border-dashed border-gray-300 bg-gray-50 relative"
+                style={{ 
+                  width: `${convertWidth(ticketWidth, widthUnit)}px`,
+                  height: '600px',
+                  margin: '20px auto',
+                  transform: `scale(${zoomLevel})`,
+                  transformOrigin: 'top center'
+                }}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={handleCanvasClick}
+                onWheel={handleWheelZoom}
+              >
               {/* Debug overlay - mostrar información de límites */}
               {showDebug && (
                 <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white text-xs p-2 rounded pointer-events-none z-10">
@@ -4211,22 +4329,25 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 >
                   {/* Indicador de relación */}
                   {element.relativeTo && (
-                    <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none">
-                      → {elements.find(el => el.id === element.relativeTo)?.type === 'text' ? 'Texto' : 'Tabla'}
+                    <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                      <ArrowRight size={10} />
+                      {elements.find(el => el.id === element.relativeTo)?.type === 'text' ? 'Texto' : 'Tabla'}
                     </div>
                   )}
                   
                   {/* Indicador de selección y movimiento con teclado */}
                   {selectedElement === element.id && (
-                    <div className="absolute -top-6 right-0 bg-green-500 text-white text-xs px-1 rounded pointer-events-none">
-                      ⌨️ Mover con flechas
+                    <div className="absolute -top-6 right-0 bg-green-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                      <Move size={10} />
+                      Mover con flechas
                     </div>
                   )}
                   
                   {/* Indicador de configuración de tabla */}
                   {element.type === 'table' && element.config?.dataPath && element.config?.columns?.length > 0 && (
-                    <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none">
-                      📊 {element.config.columns.length} col(s) - {element.config.dataPath}
+                    <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                      <Table size={10} />
+                      {element.config.columns.length} col(s) - {element.config.dataPath}
                     </div>
                   )}
                   
@@ -4249,7 +4370,8 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         {element.content || (currentJsonData ? "Texto... Usa {{propiedad}} o {{arreglo;propiedad;condición=valor}} o {{propiedad | formateador}} para datos JSON" : "Texto...")}
                       </div>
                       {element.content.includes('{{') && (
-                        <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none">
+                        <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                          <Braces size={10} />
                           JSON
                         </div>
                       )}
@@ -4288,11 +4410,12 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                       }}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs hover:bg-red-600 flex items-center justify-center"
                     >
-                      ×
+                      <X size={12} />
                     </button>
                   )}
                 </div>
               ))}
+              </div>
             </div>
           </div>
         </div>
@@ -4323,7 +4446,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
             <div className="mt-4 text-xs text-black">
               <p><strong>Nota:</strong> Esta es una vista previa con iframe. Los scripts se ejecutan correctamente y las tablas muestran datos dinámicos.</p>
-              <p className="mt-1 text-gray-600">💡 Abre la consola del iframe (clic derecho → Inspeccionar) para ver los logs de depuración.</p>
+              <p className="mt-1 text-gray-600 flex items-center gap-1">
+                <Info size={12} />
+                Abre la consola del iframe (clic derecho → Inspeccionar) para ver los logs de depuración.
+              </p>
             </div>
           </div>
         )}
