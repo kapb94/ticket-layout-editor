@@ -66,6 +66,8 @@ interface TicketElement {
   config?: any;
   relativeTo?: string; // ID del elemento al que está relacionado
   relativePosition?: 'below' | 'above' | 'left' | 'right' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'center';
+  relativeVertical?: 'top' | 'center' | 'bottom'; // Posición vertical relativa
+  relativeHorizontal?: 'left' | 'center' | 'right'; // Posición horizontal relativa
   relativeOffset?: { x: number; y: number }; // Offset desde la posición relativa
 }
 
@@ -1179,7 +1181,7 @@ export default function TicketEditor() {
   // Función auxiliar para obtener elementos con posiciones relativas calculadas
   const getElementsWithRelativePositions = () => {
     return elements.map(element => {
-      if (element.relativeTo && element.relativePosition) {
+      if (element.relativeTo && (element.relativePosition || element.relativeVertical || element.relativeHorizontal)) {
         const calculatedPosition = calculateRelativePosition(element);
         return { ...element, x: calculatedPosition.x, y: calculatedPosition.y };
       }
@@ -1578,7 +1580,7 @@ export default function TicketEditor() {
             console.log('Ajustando posiciones relativas...');
             
             // Obtener todos los elementos con posiciones relativas
-            const relativeElements = ${JSON.stringify(elements.filter(el => el.relativeTo && el.relativePosition))};
+            const relativeElements = ${JSON.stringify(elements.filter(el => el.relativeTo && (el.relativePosition || el.relativeVertical || el.relativeHorizontal)))};
             
             relativeElements.forEach(element => {
                 const elementEl = document.querySelector(\`[data-element-id="\${element.id}"]\`);
@@ -1596,43 +1598,79 @@ export default function TicketEditor() {
                 let newX = referenceRect.left - ticketRect.left;
                 let newY = referenceRect.top - ticketRect.top;
                 
-                switch (element.relativePosition) {
-                    case 'below':
-                        newY = referenceRect.bottom - ticketRect.top + offset.y;
-                        newX = referenceRect.left - ticketRect.left + offset.x;
-                        break;
-                    case 'above':
-                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
-                        newX = referenceRect.left - ticketRect.left + offset.x;
-                        break;
-                    case 'left':
-                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
-                        newY = referenceRect.top - ticketRect.top + offset.y;
-                        break;
-                    case 'right':
-                        newX = referenceRect.right - ticketRect.left + offset.x;
-                        newY = referenceRect.top - ticketRect.top + offset.y;
-                        break;
-                    case 'bottom-right':
-                        newX = referenceRect.right - ticketRect.left + offset.x;
-                        newY = referenceRect.bottom - ticketRect.top + offset.y;
-                        break;
-                    case 'bottom-left':
-                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
-                        newY = referenceRect.bottom - ticketRect.top + offset.y;
-                        break;
-                    case 'top-right':
-                        newX = referenceRect.right - ticketRect.left + offset.x;
-                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
-                        break;
-                    case 'top-left':
-                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
-                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
-                        break;
-                    case 'center':
-                        newX = referenceRect.left - ticketRect.left + (referenceRect.width - elementEl.offsetWidth) / 2 + offset.x;
-                        newY = referenceRect.top - ticketRect.top + (referenceRect.height - elementEl.offsetHeight) / 2 + offset.y;
-                        break;
+                // Sistema nuevo: usar relativeVertical y relativeHorizontal si están definidos
+                if (element.relativeVertical || element.relativeHorizontal) {
+                    // Posición vertical
+                    switch (element.relativeVertical) {
+                        case 'top':
+                            newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                            break;
+                        case 'center':
+                            newY = referenceRect.top - ticketRect.top + (referenceRect.height - elementEl.offsetHeight) / 2 + offset.y;
+                            break;
+                        case 'bottom':
+                            newY = referenceRect.bottom - ticketRect.top + offset.y;
+                            break;
+                        default:
+                            // Si no hay relativeVertical, usar la posición actual
+                            newY = elementEl.offsetTop;
+                    }
+
+                    // Posición horizontal
+                    switch (element.relativeHorizontal) {
+                        case 'left':
+                            newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                            break;
+                        case 'center':
+                            newX = referenceRect.left - ticketRect.left + (referenceRect.width - elementEl.offsetWidth) / 2 + offset.x;
+                            break;
+                        case 'right':
+                            newX = referenceRect.right - ticketRect.left + offset.x;
+                            break;
+                        default:
+                            // Si no hay relativeHorizontal, usar la posición actual
+                            newX = elementEl.offsetLeft;
+                    }
+                } else if (element.relativePosition) {
+                    // Sistema legacy: mantener compatibilidad con relativePosition
+                    switch (element.relativePosition) {
+                        case 'below':
+                            newY = referenceRect.bottom - ticketRect.top + offset.y;
+                            newX = referenceRect.left - ticketRect.left + offset.x;
+                            break;
+                        case 'above':
+                            newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                            newX = referenceRect.left - ticketRect.left + offset.x;
+                            break;
+                        case 'left':
+                            newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                            newY = referenceRect.top - ticketRect.top + offset.y;
+                            break;
+                        case 'right':
+                            newX = referenceRect.right - ticketRect.left + offset.x;
+                            newY = referenceRect.top - ticketRect.top + offset.y;
+                            break;
+                        case 'bottom-right':
+                            newX = referenceRect.right - ticketRect.left + offset.x;
+                            newY = referenceRect.bottom - ticketRect.top + offset.y;
+                            break;
+                        case 'bottom-left':
+                            newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                            newY = referenceRect.bottom - ticketRect.top + offset.y;
+                            break;
+                        case 'top-right':
+                            newX = referenceRect.right - ticketRect.left + offset.x;
+                            newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                            break;
+                        case 'top-left':
+                            newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                            newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                            break;
+                        case 'center':
+                            newX = referenceRect.left - ticketRect.left + (referenceRect.width - elementEl.offsetWidth) / 2 + offset.x;
+                            newY = referenceRect.top - ticketRect.top + (referenceRect.height - elementEl.offsetHeight) / 2 + offset.y;
+                            break;
+                    }
                 }
                 
                 // Aplicar la nueva posición
@@ -1682,7 +1720,7 @@ export default function TicketEditor() {
 <html>
 <head>
     <meta charset="UTF-8">
-    <script src="/qrcode.min.js"></script>
+    @@SCRIPTS@@
     <style>
         body {
             margin: 0;
@@ -2331,7 +2369,7 @@ export default function TicketEditor() {
             console.log('Ajustando posiciones relativas en HTML generado...');
             
             // Obtener todos los elementos con posiciones relativas
-            const relativeElements = ${JSON.stringify(elements.filter(el => el.relativeTo && el.relativePosition))};
+            const relativeElements = ${JSON.stringify(elements.filter(el => el.relativeTo && (el.relativePosition || el.relativeVertical || el.relativeHorizontal)))};
             
             relativeElements.forEach(element => {
                 const elementEl = document.querySelector(\`[data-element-id="\${element.id}"]\`);
@@ -2349,43 +2387,79 @@ export default function TicketEditor() {
                 let newX = referenceRect.left - ticketRect.left;
                 let newY = referenceRect.top - ticketRect.top;
                 
-                switch (element.relativePosition) {
-                    case 'below':
-                        newY = referenceRect.bottom - ticketRect.top + offset.y;
-                        newX = referenceRect.left - ticketRect.left + offset.x;
-                        break;
-                    case 'above':
-                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
-                        newX = referenceRect.left - ticketRect.left + offset.x;
-                        break;
-                    case 'left':
-                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
-                        newY = referenceRect.top - ticketRect.top + offset.y;
-                        break;
-                    case 'right':
-                        newX = referenceRect.right - ticketRect.left + offset.x;
-                        newY = referenceRect.top - ticketRect.top + offset.y;
-                        break;
-                    case 'bottom-right':
-                        newX = referenceRect.right - ticketRect.left + offset.x;
-                        newY = referenceRect.bottom - ticketRect.top + offset.y;
-                        break;
-                    case 'bottom-left':
-                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
-                        newY = referenceRect.bottom - ticketRect.top + offset.y;
-                        break;
-                    case 'top-right':
-                        newX = referenceRect.right - ticketRect.left + offset.x;
-                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
-                        break;
-                    case 'top-left':
-                        newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
-                        newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
-                        break;
-                    case 'center':
-                        newX = referenceRect.left - ticketRect.left + (referenceRect.width - elementEl.offsetWidth) / 2 + offset.x;
-                        newY = referenceRect.top - ticketRect.top + (referenceRect.height - elementEl.offsetHeight) / 2 + offset.y;
-                        break;
+                // Sistema nuevo: usar relativeVertical y relativeHorizontal si están definidos
+                if (element.relativeVertical || element.relativeHorizontal) {
+                    // Posición vertical
+                    switch (element.relativeVertical) {
+                        case 'top':
+                            newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                            break;
+                        case 'center':
+                            newY = referenceRect.top - ticketRect.top + (referenceRect.height - elementEl.offsetHeight) / 2 + offset.y;
+                            break;
+                        case 'bottom':
+                            newY = referenceRect.bottom - ticketRect.top + offset.y;
+                            break;
+                        default:
+                            // Si no hay relativeVertical, usar la posición actual
+                            newY = elementEl.offsetTop;
+                    }
+
+                    // Posición horizontal
+                    switch (element.relativeHorizontal) {
+                        case 'left':
+                            newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                            break;
+                        case 'center':
+                            newX = referenceRect.left - ticketRect.left + (referenceRect.width - elementEl.offsetWidth) / 2 + offset.x;
+                            break;
+                        case 'right':
+                            newX = referenceRect.right - ticketRect.left + offset.x;
+                            break;
+                        default:
+                            // Si no hay relativeHorizontal, usar la posición actual
+                            newX = elementEl.offsetLeft;
+                    }
+                } else if (element.relativePosition) {
+                    // Sistema legacy: mantener compatibilidad con relativePosition
+                    switch (element.relativePosition) {
+                        case 'below':
+                            newY = referenceRect.bottom - ticketRect.top + offset.y;
+                            newX = referenceRect.left - ticketRect.left + offset.x;
+                            break;
+                        case 'above':
+                            newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                            newX = referenceRect.left - ticketRect.left + offset.x;
+                            break;
+                        case 'left':
+                            newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                            newY = referenceRect.top - ticketRect.top + offset.y;
+                            break;
+                        case 'right':
+                            newX = referenceRect.right - ticketRect.left + offset.x;
+                            newY = referenceRect.top - ticketRect.top + offset.y;
+                            break;
+                        case 'bottom-right':
+                            newX = referenceRect.right - ticketRect.left + offset.x;
+                            newY = referenceRect.bottom - ticketRect.top + offset.y;
+                            break;
+                        case 'bottom-left':
+                            newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                            newY = referenceRect.bottom - ticketRect.top + offset.y;
+                            break;
+                        case 'top-right':
+                            newX = referenceRect.right - ticketRect.left + offset.x;
+                            newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                            break;
+                        case 'top-left':
+                            newX = referenceRect.left - ticketRect.left - elementEl.offsetWidth + offset.x;
+                            newY = referenceRect.top - ticketRect.top - elementEl.offsetHeight + offset.y;
+                            break;
+                        case 'center':
+                            newX = referenceRect.left - ticketRect.left + (referenceRect.width - elementEl.offsetWidth) / 2 + offset.x;
+                            newY = referenceRect.top - ticketRect.top + (referenceRect.height - elementEl.offsetHeight) / 2 + offset.y;
+                            break;
+                    }
                 }
                 
                 // Aplicar la nueva posición
@@ -2438,7 +2512,7 @@ export default function TicketEditor() {
   };
 
   const calculateRelativePosition = (element: TicketElement): { x: number; y: number } => {
-    if (!element.relativeTo || !element.relativePosition) {
+    if (!element.relativeTo) {
       return { x: element.x, y: element.y };
     }
 
@@ -2451,43 +2525,82 @@ export default function TicketEditor() {
     let newX = referenceElement.x;
     let newY = referenceElement.y;
 
-    switch (element.relativePosition) {
-      case 'below':
-        newY = referenceElement.y + referenceElement.height + offset.y;
-        newX = referenceElement.x + offset.x;
-        break;
-      case 'above':
-        newY = referenceElement.y - element.height + offset.y;
-        newX = referenceElement.x + offset.x;
-        break;
-      case 'left':
-        newX = referenceElement.x - element.width + offset.x;
-        newY = referenceElement.y + offset.y;
-        break;
-      case 'right':
-        newX = referenceElement.x + referenceElement.width + offset.x;
-        newY = referenceElement.y + offset.y;
-        break;
-      case 'bottom-right':
-        newX = referenceElement.x + referenceElement.width + offset.x;
-        newY = referenceElement.y + referenceElement.height + offset.y;
-        break;
-      case 'bottom-left':
-        newX = referenceElement.x - element.width + offset.x;
-        newY = referenceElement.y + referenceElement.height + offset.y;
-        break;
-      case 'top-right':
-        newX = referenceElement.x + referenceElement.width + offset.x;
-        newY = referenceElement.y - element.height + offset.y;
-        break;
-      case 'top-left':
-        newX = referenceElement.x - element.width + offset.x;
-        newY = referenceElement.y - element.height + offset.y;
-        break;
-      case 'center':
-        newX = referenceElement.x + (referenceElement.width - element.width) / 2 + offset.x;
-        newY = referenceElement.y + (referenceElement.height - element.height) / 2 + offset.y;
-        break;
+    // Sistema nuevo: usar relativeVertical y relativeHorizontal si están definidos
+    if (element.relativeVertical || element.relativeHorizontal) {
+      // Posición vertical
+      switch (element.relativeVertical) {
+        case 'top':
+          newY = referenceElement.y - element.height + offset.y;
+          break;
+        case 'center':
+          newY = referenceElement.y + (referenceElement.height - element.height) / 2 + offset.y;
+          break;
+        case 'bottom':
+          newY = referenceElement.y + referenceElement.height + offset.y;
+          break;
+        default:
+          // Si no hay relativeVertical, usar la posición actual
+          newY = element.y;
+      }
+
+      // Posición horizontal
+      switch (element.relativeHorizontal) {
+        case 'left':
+          newX = referenceElement.x - element.width + offset.x;
+          break;
+        case 'center':
+          newX = referenceElement.x + (referenceElement.width - element.width) / 2 + offset.x;
+          break;
+        case 'right':
+          newX = referenceElement.x + referenceElement.width + offset.x;
+          break;
+        default:
+          // Si no hay relativeHorizontal, usar la posición actual
+          newX = element.x;
+      }
+    } else if (element.relativePosition) {
+      // Sistema legacy: mantener compatibilidad con relativePosition
+      switch (element.relativePosition) {
+        case 'below':
+          newY = referenceElement.y + referenceElement.height + offset.y;
+          newX = referenceElement.x + offset.x;
+          break;
+        case 'above':
+          newY = referenceElement.y - element.height + offset.y;
+          newX = referenceElement.x + offset.x;
+          break;
+        case 'left':
+          newX = referenceElement.x - element.width + offset.x;
+          newY = referenceElement.y + offset.y;
+          break;
+        case 'right':
+          newX = referenceElement.x + referenceElement.width + offset.x;
+          newY = referenceElement.y + offset.y;
+          break;
+        case 'bottom-right':
+          newX = referenceElement.x + referenceElement.width + offset.x;
+          newY = referenceElement.y + referenceElement.height + offset.y;
+          break;
+        case 'bottom-left':
+          newX = referenceElement.x - element.width + offset.x;
+          newY = referenceElement.y + referenceElement.height + offset.y;
+          break;
+        case 'top-right':
+          newX = referenceElement.x + referenceElement.width + offset.x;
+          newY = referenceElement.y - element.height + offset.y;
+          break;
+        case 'top-left':
+          newX = referenceElement.x - element.width + offset.x;
+          newY = referenceElement.y - element.height + offset.y;
+          break;
+        case 'center':
+          newX = referenceElement.x + (referenceElement.width - element.width) / 2 + offset.x;
+          newY = referenceElement.y + (referenceElement.height - element.height) / 2 + offset.y;
+          break;
+      }
+    } else {
+      // Si no hay ninguna configuración de posición relativa, mantener la posición actual
+      return { x: element.x, y: element.y };
     }
 
     return { x: newX, y: newY };
@@ -2496,7 +2609,7 @@ export default function TicketEditor() {
   const updateRelativePositions = () => {
     let hasChanges = false;
     const updatedElements = elements.map(element => {
-      if (element.relativeTo && element.relativePosition) {
+      if (element.relativeTo && (element.relativePosition || element.relativeVertical || element.relativeHorizontal)) {
         const newPosition = calculateRelativePosition(element);
         // Solo actualizar si la posición realmente cambió
         if (Math.abs(newPosition.x - element.x) > 0.1 || Math.abs(newPosition.y - element.y) > 0.1) {
@@ -3535,39 +3648,140 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         </select>
                       </div>
 
-                      {/* Posición relativa */}
+                      {/* Posición relativa - Sistema nuevo */}
                       {element.relativeTo && (
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1">Posición:</label>
-                          <div className="grid grid-cols-3 gap-1">
-                            {(['top-left', 'above', 'top-right', 'left', 'center', 'right', 'bottom-left', 'below', 'bottom-right'] as const).map((pos) => (
+                          <label className="block text-xs text-gray-600 mb-1">Posición Relativa:</label>
+                          
+                          {/* Selector de modo */}
+                          <div className="mb-2">
+                            <div className="flex gap-1 text-xs">
                               <button
-                                key={pos}
-                                onClick={() => updateElement(selectedElement, { relativePosition: pos })}
-                                className={`px-2 py-1 text-xs rounded border transition-colors ${
-                                  element.relativePosition === pos 
+                                onClick={() => updateElement(selectedElement, { 
+                                  relativePosition: undefined,
+                                  relativeVertical: undefined,
+                                  relativeHorizontal: undefined
+                                })}
+                                className={`px-2 py-1 rounded border transition-colors ${
+                                  !element.relativePosition && !element.relativeVertical && !element.relativeHorizontal
                                     ? 'bg-blue-500 text-white border-blue-500' 
                                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                 }`}
-                                title={pos.replace('-', ' ')}
                               >
-                                {pos === 'top-left' && <CornerUpLeft size={14} />}
-                                {pos === 'above' && <ArrowUp size={14} />}
-                                {pos === 'top-right' && <CornerUpRight size={14} />}
-                                {pos === 'left' && <ArrowLeft size={14} />}
-                                {pos === 'center' && <Circle size={14} />}
-                                {pos === 'right' && <ArrowRight size={14} />}
-                                {pos === 'bottom-left' && <CornerDownLeft size={14} />}
-                                {pos === 'below' && <ArrowDown size={14} />}
-                                {pos === 'bottom-right' && <CornerDownRight size={14} />}
+                                Manual
                               </button>
-                            ))}
+                              <button
+                                onClick={() => updateElement(selectedElement, { 
+                                  relativePosition: 'below',
+                                  relativeVertical: undefined,
+                                  relativeHorizontal: undefined
+                                })}
+                                className={`px-2 py-1 rounded border transition-colors ${
+                                  element.relativePosition && !element.relativeVertical && !element.relativeHorizontal
+                                    ? 'bg-blue-500 text-white border-blue-500' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                Predefinida
+                              </button>
+                              <button
+                                onClick={() => updateElement(selectedElement, { 
+                                  relativePosition: undefined,
+                                  relativeVertical: 'bottom',
+                                  relativeHorizontal: 'left'
+                                })}
+                                className={`px-2 py-1 rounded border transition-colors ${
+                                  !element.relativePosition && (element.relativeVertical || element.relativeHorizontal)
+                                    ? 'bg-blue-500 text-white border-blue-500' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                Personalizada
+                              </button>
+                            </div>
                           </div>
+
+                          {/* Posiciones predefinidas */}
+                          {(element.relativePosition && !element.relativeVertical && !element.relativeHorizontal) && (
+                            <div className="grid grid-cols-3 gap-1 mb-2">
+                              {(['top-left', 'above', 'top-right', 'left', 'center', 'right', 'bottom-left', 'below', 'bottom-right'] as const).map((pos) => (
+                                <button
+                                  key={pos}
+                                  onClick={() => updateElement(selectedElement, { relativePosition: pos })}
+                                  className={`px-2 py-1 text-xs rounded border transition-colors ${
+                                    element.relativePosition === pos 
+                                      ? 'bg-blue-500 text-white border-blue-500' 
+                                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                  }`}
+                                  title={pos.replace('-', ' ')}
+                                >
+                                  {pos === 'top-left' && <CornerUpLeft size={14} />}
+                                  {pos === 'above' && <ArrowUp size={14} />}
+                                  {pos === 'top-right' && <CornerUpRight size={14} />}
+                                  {pos === 'left' && <ArrowLeft size={14} />}
+                                  {pos === 'center' && <Circle size={14} />}
+                                  {pos === 'right' && <ArrowRight size={14} />}
+                                  {pos === 'bottom-left' && <CornerDownLeft size={14} />}
+                                  {pos === 'below' && <ArrowDown size={14} />}
+                                  {pos === 'bottom-right' && <CornerDownRight size={14} />}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Posiciones personalizadas */}
+                          {(!element.relativePosition && (element.relativeVertical || element.relativeHorizontal)) && (
+                            <div className="space-y-2">
+                              {/* Posición vertical */}
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">Vertical:</label>
+                                <div className="flex gap-1">
+                                  {(['top', 'center', 'bottom'] as const).map((pos) => (
+                                    <button
+                                      key={pos}
+                                      onClick={() => updateElement(selectedElement, { relativeVertical: pos })}
+                                      className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
+                                        element.relativeVertical === pos 
+                                          ? 'bg-blue-500 text-white border-blue-500' 
+                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      {pos === 'top' && <ArrowUp size={14} />}
+                                      {pos === 'center' && <Circle size={14} />}
+                                      {pos === 'bottom' && <ArrowDown size={14} />}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Posición horizontal */}
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">Horizontal:</label>
+                                <div className="flex gap-1">
+                                  {(['left', 'center', 'right'] as const).map((pos) => (
+                                    <button
+                                      key={pos}
+                                      onClick={() => updateElement(selectedElement, { relativeHorizontal: pos })}
+                                      className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
+                                        element.relativeHorizontal === pos 
+                                          ? 'bg-blue-500 text-white border-blue-500' 
+                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      {pos === 'left' && <ArrowLeft size={14} />}
+                                      {pos === 'center' && <Circle size={14} />}
+                                      {pos === 'right' && <ArrowRight size={14} />}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
                       {/* Offset */}
-                      {element.relativeTo && element.relativePosition && (
+                      {element.relativeTo && (element.relativePosition || element.relativeVertical || element.relativeHorizontal) && (
                         <div>
                           <label className="block text-xs text-gray-600 mb-1">Offset (px):</label>
                           <div className="flex gap-2">
