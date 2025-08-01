@@ -1037,8 +1037,10 @@ export default function TicketEditor() {
     }
   };
 
-  // Hacer la función disponible globalmente
-  (window as any).copyToClipboard = copyToClipboard;
+  // Hacer la función disponible globalmente (solo en el navegador)
+  if (typeof window !== 'undefined') {
+    (window as any).copyToClipboard = copyToClipboard;
+  }
 
   const fallbackCopyToClipboard = (text: string, element: HTMLElement) => {
     // Crear un textarea temporal
@@ -2984,8 +2986,8 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span>Descargar ejemplo JSON</span>
-              </a>
-            </div>
+          </a>
+        </div>
           </div>
 
           {/* Herramientas de posicionamiento */}
@@ -3363,7 +3365,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         />
                         <div className="text-xs text-gray-500 mt-1">
                           Ejemplo: productos.items, venta.detalles, etc.
-                        </div>
+    </div>
                         {element.config?.dataPath && (
                           <div className="text-xs text-green-600 mt-1">
                             ✅ Ruta configurada: {element.config.dataPath}
@@ -4065,7 +4067,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   onDragEnd={handleElementDragEnd}
                   onDrag={(e) => handleElementDrag(e, element.id)}
                   className={`absolute cursor-move ${
-                    selectedElement === element.id ? 'ring-2 ring-blue-500' : ''
+                    selectedElement === element.id ? 'ring-2 ring-blue-500 border-2 border-blue-500' : 'border-2 border-transparent'
                   }`}
                   style={{
                     left: element.x,
@@ -4073,7 +4075,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                     width: element.width,
                     height: element.height,
                     backgroundColor: element.type === 'text' ? 'transparent' : 'transparent',
-                    border: element.type === 'text' ? 'none' : '1px solid #ccc',
+                   
                     padding: '5px',
                     userSelect: 'none',
                     minHeight: element.type === 'table' ? '30px' : 'auto',
