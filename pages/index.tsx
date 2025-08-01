@@ -880,13 +880,12 @@ export default function TicketEditor() {
         }
         .ticket {
             width: ${widthPx}px;
-            border: 1px solid #000;
+            border: none;
             position: relative;
             background: white;
-            margin: 0 auto;
+            margin: 0;
             min-height: ${contentHeight}px;
             padding: 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .element {
             position: absolute;
@@ -1271,7 +1270,7 @@ export default function TicketEditor() {
         }
         .ticket {
             width: ${widthPx}px;
-            border: 1px solid #000;
+            border: none;
             position: relative;
             background: white;
             margin: 0 auto;
@@ -1651,7 +1650,7 @@ export default function TicketEditor() {
         // ===== DATOS DE EJEMPLO (OPCIONAL) =====
                  // Descomenta las siguientes líneas para usar datos de ejemplo:
          
-         const datosEjemplo = $$JSON$$;
+         const datosEjemplo = @@JSON@@;
          document.addEventListener('DOMContentLoaded', function() {
              processTicketTemplate(datosEjemplo);
              // Ajustar posiciones después de procesar la plantilla
