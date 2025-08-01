@@ -81,6 +81,7 @@ export default function TicketEditor() {
   const [relativeMode, setRelativeMode] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [hasCustomJson, setHasCustomJson] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Datos JSON por defecto (hardcodeados)
@@ -199,7 +200,23 @@ export default function TicketEditor() {
           e.preventDefault();
           if (e.shiftKey) {
             // Shift + flecha derecha = aumentar ancho
-            newWidth = Math.min(800, element.width + step);
+            const ticketWidthPx = convertWidth(ticketWidth, widthUnit);
+            const maxWidth = ticketWidthPx - element.x;
+            newWidth = Math.min(maxWidth, element.width + step);
+            
+            // Debug: Mostrar información de límites en consola
+            if (showDebug) {
+              console.log('Keyboard Resize Debug:', {
+                elementId: selectedElement,
+                currentWidth: element.width,
+                newWidth,
+                maxWidth,
+                ticketWidthPx,
+                elementX: element.x,
+                step,
+                isLimited: element.width + step > maxWidth
+              });
+            }
           } else {
             // Solo flecha derecha = mover a la derecha
             newX += step;
@@ -219,7 +236,7 @@ export default function TicketEditor() {
           e.preventDefault();
           if (e.shiftKey) {
             // Shift + flecha abajo = aumentar altura
-            newHeight = Math.min(600, element.height + step);
+            newHeight = Math.min(calculateContentHeight() - element.y, element.height + step);
           } else {
             // Solo flecha abajo = mover hacia abajo
             newY += step;
@@ -229,11 +246,10 @@ export default function TicketEditor() {
           return;
       }
 
-      // Mantener el elemento dentro de los límites del canvas
-      const canvasWidth = convertWidth(ticketWidth, widthUnit);
-      const canvasHeight = 600;
-      const maxX = canvasWidth - newWidth;
-      const maxY = canvasHeight - newHeight;
+      // Mantener el elemento dentro de los límites del área de diseño
+      const ticketWidthPx = convertWidth(ticketWidth, widthUnit);
+      const maxX = ticketWidthPx - newWidth;
+      const maxY = calculateContentHeight() - newHeight;
       
       newX = Math.max(0, Math.min(newX, maxX));
       newY = Math.max(0, Math.min(newY, maxY));
@@ -418,9 +434,10 @@ export default function TicketEditor() {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        // Mantener el elemento dentro de los límites del canvas
-        const maxX = rect.width - 50;
-        const maxY = rect.height - 50;
+        // Mantener el elemento dentro de los límites del área de diseño (ancho del ticket)
+        const ticketWidthPx = convertWidth(ticketWidth, widthUnit);
+        const maxX = ticketWidthPx - 50;
+        const maxY = calculateContentHeight() - 50;
         const constrainedX = Math.max(0, Math.min(x, maxX));
         const constrainedY = Math.max(0, Math.min(y, maxY));
         
@@ -468,9 +485,10 @@ export default function TicketEditor() {
     let x = e.clientX - rect.left;
     let y = e.clientY - rect.top;
 
-    // Limitar la posición dentro del área de diseño
-    const maxX = rect.width - element.width;
-    const maxY = rect.height - element.height;
+    // Limitar la posición dentro del área de diseño (ancho del ticket)
+    const ticketWidthPx = convertWidth(ticketWidth, widthUnit);
+    const maxX = ticketWidthPx - element.width;
+    const maxY = calculateContentHeight() - element.height;
     
     x = Math.max(0, Math.min(x, maxX));
     y = Math.max(0, Math.min(y, maxY));
@@ -506,9 +524,25 @@ export default function TicketEditor() {
     let newWidth = Math.max(50, resizeStart.width + deltaX);
     let newHeight = Math.max(30, resizeStart.height + deltaY);
 
-    // Limitar el tamaño máximo al área de diseño
-    const maxWidth = rect.width - element.x;
-    const maxHeight = rect.height - element.y;
+    // Limitar el tamaño máximo al área de diseño (ancho del ticket)
+    // Convertir ticketWidth a píxeles para la comparación
+    const ticketWidthPx = convertWidth(ticketWidth, widthUnit);
+    const maxWidth = ticketWidthPx - element.x;
+    const maxHeight = calculateContentHeight() - element.y;
+    
+    // Debug: Mostrar información de límites en consola
+    if (showDebug) {
+      console.log('Resize Debug:', {
+        elementId: selectedElement,
+        currentWidth: element.width,
+        newWidth,
+        maxWidth,
+        ticketWidthPx,
+        elementX: element.x,
+        deltaX,
+        isLimited: newWidth > maxWidth
+      });
+    }
     
     newWidth = Math.min(newWidth, maxWidth);
     newHeight = Math.min(newHeight, maxHeight);
@@ -590,48 +624,250 @@ export default function TicketEditor() {
   const replaceJsonReferences = (content: string, data: any): string => {
     if (!data) return content;
     
-    // Buscar patrones como {{propiedad}} o {{ruta.propiedad}} o {{PropiedadPadre;PropiedadHijo;Condición}}
+    // Buscar patrones como {{propiedad}} o {{ruta.propiedad}} o {{PropiedadPadre;PropiedadHijo;Condición}} o {{propiedad | formateador}}
     return content.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
       try {
-        // Verificar si es la nueva sintaxis con punto y coma (búsqueda condicional)
-        if (path.includes(';')) {
-          const parts = path.split(';');
-          if (parts.length >= 3) {
-            const [arrayPath, propertyToGet, condition] = parts;
-            
-            // Obtener el arreglo
-            const array = arrayPath.split('.').reduce((obj: any, key: string) => obj && obj[key], data);
-            
-            if (Array.isArray(array)) {
-              // Buscar el elemento que cumpla la condición
-              const foundItem = array.find((item: any) => {
-                // La condición puede ser "propiedad=valor" o "propiedad:valor"
-                const [conditionProp, conditionValue] = condition.includes('=') 
-                  ? condition.split('=') 
-                  : condition.split(':');
-                
-                const itemValue = conditionProp.split('.').reduce((obj: any, key: string) => obj && obj[key], item);
-                return String(itemValue) === conditionValue;
-              });
+        // Verificar si hay formateador (sintaxis con |)
+        let value: any = null;
+        let formatter: string | null = null;
+        
+        if (path.includes('|')) {
+          const [dataPath, formatPart] = path.split('|').map((s: string) => s.trim());
+          formatter = formatPart;
+          
+          // Verificar si es la nueva sintaxis con punto y coma (búsqueda condicional)
+          if (dataPath.includes(';')) {
+            const parts = dataPath.split(';');
+            if (parts.length >= 3) {
+              const [arrayPath, propertyToGet, condition] = parts;
               
-              if (foundItem) {
-                // Obtener la propiedad específica del elemento encontrado
-                const value = propertyToGet.split('.').reduce((obj: any, key: string) => obj && obj[key], foundItem);
-                return value !== undefined && value !== null ? String(value) : match;
+              // Obtener el arreglo
+              const array = arrayPath.split('.').reduce((obj: any, key: string) => obj && obj[key], data);
+              
+              if (Array.isArray(array)) {
+                // Buscar el elemento que cumpla la condición
+                const foundItem = array.find((item: any) => {
+                  // La condición puede ser "propiedad=valor" o "propiedad:valor"
+                  const [conditionProp, conditionValue] = condition.includes('=') 
+                    ? condition.split('=') 
+                    : condition.split(':');
+                  
+                  const itemValue = conditionProp.split('.').reduce((obj: any, key: string) => obj && obj[key], item);
+                  return String(itemValue) === conditionValue;
+                });
+                
+                if (foundItem) {
+                  // Obtener la propiedad específica del elemento encontrado
+                  value = propertyToGet.split('.').reduce((obj: any, key: string) => obj && obj[key], foundItem);
+                }
               }
             }
-            return match; // Si no se encuentra, mantener el texto original
+          } else {
+            // Sintaxis original: {{propiedad}} o {{ruta.propiedad}}
+            value = dataPath.split('.').reduce((obj: any, key: string) => obj && obj[key], data);
+          }
+        } else {
+          // Sin formateador
+          // Verificar si es la nueva sintaxis con punto y coma (búsqueda condicional)
+          if (path.includes(';')) {
+            const parts = path.split(';');
+            if (parts.length >= 3) {
+              const [arrayPath, propertyToGet, condition] = parts;
+              
+              // Obtener el arreglo
+              const array = arrayPath.split('.').reduce((obj: any, key: string) => obj && obj[key], data);
+              
+              if (Array.isArray(array)) {
+                // Buscar el elemento que cumpla la condición
+                const foundItem = array.find((item: any) => {
+                  // La condición puede ser "propiedad=valor" o "propiedad:valor"
+                  const [conditionProp, conditionValue] = condition.includes('=') 
+                    ? condition.split('=') 
+                    : condition.split(':');
+                  
+                  const itemValue = conditionProp.split('.').reduce((obj: any, key: string) => obj && obj[key], item);
+                  return String(itemValue) === conditionValue;
+                });
+                
+                if (foundItem) {
+                  // Obtener la propiedad específica del elemento encontrado
+                  value = propertyToGet.split('.').reduce((obj: any, key: string) => obj && obj[key], foundItem);
+                }
+              }
+            }
+          } else {
+            // Sintaxis original: {{propiedad}} o {{ruta.propiedad}}
+            value = path.split('.').reduce((obj: any, key: string) => obj && obj[key], data);
           }
         }
         
-        // Sintaxis original: {{propiedad}} o {{ruta.propiedad}}
-        const value = path.split('.').reduce((obj: any, key: string) => obj && obj[key], data);
-        return value !== undefined && value !== null ? String(value) : match;
+        // Aplicar formateo si existe
+        if (value !== undefined && value !== null) {
+          if (formatter) {
+            return formatValue(value, formatter);
+          }
+          return String(value);
+        }
+        
+        return match; // Si no se encuentra, mantener el texto original
       } catch (error) {
         console.error('Error procesando referencia JSON:', path, error);
         return match; // Si hay error, mantener el texto original
       }
     });
+  };
+
+  // Función para formatear valores usando formateadores
+  const formatValue = (value: any, formatter: string): string => {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    try {
+      switch (formatter.toLowerCase()) {
+        case 'uppercase':
+          return String(value).toUpperCase();
+
+        case 'lowercase':
+          return String(value).toLowerCase();
+
+        case 'capitalize':
+          return String(value).replace(/\b\w/g, l => l.toUpperCase());
+
+        case 'number':
+          const num = Number(value);
+          if (isNaN(num)) return '0';
+          return num.toFixed(0);
+
+        case 'number:2':
+          const num2 = Number(value);
+          if (isNaN(num2)) return '0.00';
+          return num2.toFixed(2);
+
+        case 'currency':
+          const currencyValue = Number(value);
+          if (isNaN(currencyValue)) return '$0.00';
+          return '$' + currencyValue.toLocaleString('es-MX', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+
+        case 'currency:mxn':
+          const mxnValue = Number(value);
+          if (isNaN(mxnValue)) return '$0.00';
+          return '$' + mxnValue.toLocaleString('es-MX', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+
+        case 'currency:usd':
+          const usdValue = Number(value);
+          if (isNaN(usdValue)) return '$0.00';
+          return '$' + usdValue.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+
+        case 'currency:eur':
+          const eurValue = Number(value);
+          if (isNaN(eurValue)) return '€0.00';
+          return '€' + eurValue.toLocaleString('de-DE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+
+        case 'percentage':
+          const percentValue = Number(value);
+          if (isNaN(percentValue)) return '0%';
+          return percentValue.toFixed(0) + '%';
+
+        case 'percentage:2':
+          const percentValue2 = Number(value);
+          if (isNaN(percentValue2)) return '0.00%';
+          return percentValue2.toFixed(2) + '%';
+
+        case 'date':
+          if (!value) return '';
+          const date = new Date(value);
+          if (isNaN(date.getTime())) return '';
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear();
+          return `${day}/${month}/${year}`;
+
+        case 'date:yyyy-mm-dd':
+          if (!value) return '';
+          const date2 = new Date(value);
+          if (isNaN(date2.getTime())) return '';
+          return date2.toISOString().split('T')[0];
+
+        case 'datetime':
+          if (!value) return '';
+          const dateTime = new Date(value);
+          if (isNaN(dateTime.getTime())) return '';
+          const day2 = dateTime.getDate().toString().padStart(2, '0');
+          const month2 = (dateTime.getMonth() + 1).toString().padStart(2, '0');
+          const year2 = dateTime.getFullYear();
+          const hours = dateTime.getHours().toString().padStart(2, '0');
+          const minutes = dateTime.getMinutes().toString().padStart(2, '0');
+          return `${day2}/${month2}/${year2} ${hours}:${minutes}`;
+
+        case 'truncate:20':
+          const str = String(value);
+          return str.length > 20 ? str.substring(0, 20) + '...' : str;
+
+        case 'truncate:50':
+          const str2 = String(value);
+          return str2.length > 50 ? str2.substring(0, 50) + '...' : str2;
+
+        case 'truncate:100':
+          const str3 = String(value);
+          return str3.length > 100 ? str3.substring(0, 100) + '...' : str3;
+
+        default:
+          // Formateador personalizado con parámetros
+          if (formatter.startsWith('number:')) {
+            const decimals = parseInt(formatter.split(':')[1]) || 0;
+            const num = Number(value);
+            if (isNaN(num)) return '0';
+            return num.toFixed(decimals);
+          }
+          
+          if (formatter.startsWith('currency:')) {
+            const currency = formatter.split(':')[1]?.toUpperCase() || 'MXN';
+            const currencyValue2 = Number(value);
+            if (isNaN(currencyValue2)) return '$0.00';
+            
+            const currencySymbols: { [key: string]: string } = { USD: '$', MXN: '$', EUR: '€' };
+            const symbol = currencySymbols[currency] || '$';
+            const locale = currency === 'USD' ? 'en-US' : currency === 'EUR' ? 'de-DE' : 'es-MX';
+            
+            return symbol + currencyValue2.toLocaleString(locale, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            });
+          }
+          
+          if (formatter.startsWith('percentage:')) {
+            const decimals = parseInt(formatter.split(':')[1]) || 0;
+            const percentValue3 = Number(value);
+            if (isNaN(percentValue3)) return '0%';
+            return percentValue3.toFixed(decimals) + '%';
+          }
+          
+          if (formatter.startsWith('truncate:')) {
+            const maxLength = parseInt(formatter.split(':')[1]) || 50;
+            const str4 = String(value);
+            return str4.length > maxLength ? str4.substring(0, maxLength) + '...' : str4;
+          }
+          
+          // Si no reconoce el formateador, devolver el valor original
+          return String(value);
+      }
+    } catch (error) {
+      console.error('Error aplicando formateador:', formatter, error);
+      return String(value);
+    }
   };
 
   // Función para formatear valores de columnas según las opciones configuradas
@@ -782,6 +1018,57 @@ export default function TicketEditor() {
     return String(value);
   };
 
+  // Función global para copiar al portapapeles
+  const copyToClipboard = (text: string, element: HTMLElement) => {
+    // Método moderno con navigator.clipboard
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        element.style.backgroundColor = '#bef3be';
+        setTimeout(() => {
+          element.style.backgroundColor = '#dbeafe';
+        }, 500);
+      }).catch(err => {
+        console.error('Error al copiar:', err);
+        fallbackCopyToClipboard(text, element);
+      });
+    } else {
+      // Método fallback para navegadores antiguos o contextos no seguros
+      fallbackCopyToClipboard(text, element);
+    }
+  };
+
+  // Hacer la función disponible globalmente
+  (window as any).copyToClipboard = copyToClipboard;
+
+  const fallbackCopyToClipboard = (text: string, element: HTMLElement) => {
+    // Crear un textarea temporal
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        element.style.backgroundColor = '#bef3be';
+        setTimeout(() => {
+          element.style.backgroundColor = '#dbeafe';
+        }, 500);
+      } else {
+        alert('No se pudo copiar al portapapeles. Copia manual: ' + text);
+      }
+    } catch (err) {
+      console.error('Error en fallback copy:', err);
+      alert('No se pudo copiar al portapapeles. Copia manual: ' + text);
+    }
+    
+    document.body.removeChild(textArea);
+  };
+
   const generateJsonViewerHTML = () => {
     if (!currentJsonData) return '<p class="text-gray-500">No hay datos JSON disponibles</p>';
     
@@ -817,54 +1104,6 @@ export default function TicketEditor() {
           💡 <strong>Consejo:</strong> Haz clic en cualquier ruta para copiarla al portapapeles
         </div>
       </div>
-      <script>
-        function copyToClipboard(text, element) {
-          // Método moderno con navigator.clipboard
-          if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => {
-              element.style.backgroundColor = '#bef3be';
-              setTimeout(() => {
-                element.style.backgroundColor = '#dbeafe';
-              }, 500);
-            }).catch(err => {
-              console.error('Error al copiar:', err);
-              fallbackCopyToClipboard(text, element);
-            });
-          } else {
-            // Método fallback para navegadores antiguos o contextos no seguros
-            fallbackCopyToClipboard(text, element);
-          }
-        }
-        
-        function fallbackCopyToClipboard(text, element) {
-          // Crear un textarea temporal
-          const textArea = document.createElement('textarea');
-          textArea.value = text;
-          textArea.style.position = 'fixed';
-          textArea.style.left = '-999999px';
-          textArea.style.top = '-999999px';
-          document.body.appendChild(textArea);
-          textArea.focus();
-          textArea.select();
-          
-          try {
-            const successful = document.execCommand('copy');
-            if (successful) {
-              element.style.backgroundColor = '#bef3be';
-              setTimeout(() => {
-                element.style.backgroundColor = '#dbeafe';
-              }, 500);
-            } else {
-              alert('No se pudo copiar al portapapeles. Copia manual: ' + text);
-            }
-          } catch (err) {
-            console.error('Error en fallback copy:', err);
-            alert('No se pudo copiar al portapapeles. Copia manual: ' + text);
-          }
-          
-          document.body.removeChild(textArea);
-        }
-      </script>
     `;
     
     return html;
@@ -907,7 +1146,7 @@ export default function TicketEditor() {
     <style>
         body {
             margin: 0;
-            padding: 10px;
+            padding: 0;
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
         }
@@ -1298,7 +1537,7 @@ export default function TicketEditor() {
     <style>
         body {
             margin: 0;
-            padding: 20px;
+            padding: 0;
             font-family: Arial, sans-serif;
         }
         .ticket {
@@ -1410,45 +1649,248 @@ export default function TicketEditor() {
             
             return content.replace(/\\{\\{([^}]+)\\}\\}/g, (match, path) => {
                 try {
-                    // Verificar si es la nueva sintaxis con punto y coma (búsqueda condicional)
-                    if (path.includes(';')) {
-                        const parts = path.split(';');
-                        if (parts.length >= 3) {
-                            const [arrayPath, propertyToGet, condition] = parts;
-                            
-                            // Obtener el arreglo
-                            const array = getValueByPath(data, arrayPath);
-                            
-                            if (Array.isArray(array)) {
-                                // Buscar el elemento que cumpla la condición
-                                const foundItem = array.find((item) => {
-                                    // La condición puede ser "propiedad=valor" o "propiedad:valor"
-                                    const [conditionProp, conditionValue] = condition.includes('=') 
-                                        ? condition.split('=') 
-                                        : condition.split(':');
-                                    
-                                    const itemValue = getValueByPath(item, conditionProp);
-                                    return String(itemValue) === conditionValue;
-                                });
+                    // Verificar si hay formateador (sintaxis con |)
+                    let value = null;
+                    let formatter = null;
+                    
+                    if (path.includes('|')) {
+                        const parts = path.split('|').map(s => s.trim());
+                        const dataPath = parts[0];
+                        formatter = parts[1];
+                        
+                        // Verificar si es la nueva sintaxis con punto y coma (búsqueda condicional)
+                        if (dataPath.includes(';')) {
+                            const pathParts = dataPath.split(';');
+                            if (pathParts.length >= 3) {
+                                const [arrayPath, propertyToGet, condition] = pathParts;
                                 
-                                if (foundItem) {
-                                    // Obtener la propiedad específica del elemento encontrado
-                                    const value = getValueByPath(foundItem, propertyToGet);
-                                    return value !== undefined && value !== null ? String(value) : match;
+                                // Obtener el arreglo
+                                const array = getValueByPath(data, arrayPath);
+                                
+                                if (Array.isArray(array)) {
+                                    // Buscar el elemento que cumpla la condición
+                                    const foundItem = array.find((item) => {
+                                        // La condición puede ser "propiedad=valor" o "propiedad:valor"
+                                        const [conditionProp, conditionValue] = condition.includes('=') 
+                                            ? condition.split('=') 
+                                            : condition.split(':');
+                                        
+                                        const itemValue = getValueByPath(item, conditionProp);
+                                        return String(itemValue) === conditionValue;
+                                    });
+                                    
+                                    if (foundItem) {
+                                        // Obtener la propiedad específica del elemento encontrado
+                                        value = getValueByPath(foundItem, propertyToGet);
+                                    }
                                 }
                             }
-                            return match; // Si no se encuentra, mantener el texto original
+                        } else {
+                            // Sintaxis original: {{propiedad}} o {{ruta.propiedad}}
+                            value = getValueByPath(data, dataPath);
+                        }
+                    } else {
+                        // Sin formateador
+                        // Verificar si es la nueva sintaxis con punto y coma (búsqueda condicional)
+                        if (path.includes(';')) {
+                            const parts = path.split(';');
+                            if (parts.length >= 3) {
+                                const [arrayPath, propertyToGet, condition] = parts;
+                                
+                                // Obtener el arreglo
+                                const array = getValueByPath(data, arrayPath);
+                                
+                                if (Array.isArray(array)) {
+                                    // Buscar el elemento que cumpla la condición
+                                    const foundItem = array.find((item) => {
+                                        // La condición puede ser "propiedad=valor" o "propiedad:valor"
+                                        const [conditionProp, conditionValue] = condition.includes('=') 
+                                            ? condition.split('=') 
+                                            : condition.split(':');
+                                        
+                                        const itemValue = getValueByPath(item, conditionProp);
+                                        return String(itemValue) === conditionValue;
+                                    });
+                                    
+                                    if (foundItem) {
+                                        // Obtener la propiedad específica del elemento encontrado
+                                        value = getValueByPath(foundItem, propertyToGet);
+                                    }
+                                }
+                            }
+                        } else {
+                            // Sintaxis original: {{propiedad}} o {{ruta.propiedad}}
+                            value = getValueByPath(data, path);
                         }
                     }
                     
-                    // Sintaxis original: {{propiedad}} o {{ruta.propiedad}}
-                    const value = getValueByPath(data, path);
-                    return value !== undefined && value !== null ? String(value) : match;
+                    // Aplicar formateo si existe
+                    if (value !== undefined && value !== null) {
+                        if (formatter) {
+                            return formatValue(value, formatter);
+                        }
+                        return String(value);
+                    }
+                    
+                    return match; // Si no se encuentra, mantener el texto original
                 } catch (error) {
                     console.error('Error al reemplazar placeholder:', path, error);
                     return match;
                 }
             });
+        }
+        
+        // Función para formatear valores usando formateadores
+        function formatValue(value, formatter) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+
+            try {
+                switch (formatter.toLowerCase()) {
+                    case 'uppercase':
+                        return String(value).toUpperCase();
+
+                    case 'lowercase':
+                        return String(value).toLowerCase();
+
+                    case 'capitalize':
+                        return String(value).replace(/\\b\\w/g, l => l.toUpperCase());
+
+                    case 'number':
+                        const num = Number(value);
+                        if (isNaN(num)) return '0';
+                        return num.toFixed(0);
+
+                    case 'number:2':
+                        const num2 = Number(value);
+                        if (isNaN(num2)) return '0.00';
+                        return num2.toFixed(2);
+
+                    case 'currency':
+                        const currencyValue = Number(value);
+                        if (isNaN(currencyValue)) return '$0.00';
+                        return '$' + currencyValue.toLocaleString('es-MX', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+
+                    case 'currency:mxn':
+                        const mxnValue = Number(value);
+                        if (isNaN(mxnValue)) return '$0.00';
+                        return '$' + mxnValue.toLocaleString('es-MX', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+
+                    case 'currency:usd':
+                        const usdValue = Number(value);
+                        if (isNaN(usdValue)) return '$0.00';
+                        return '$' + usdValue.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+
+                    case 'currency:eur':
+                        const eurValue = Number(value);
+                        if (isNaN(eurValue)) return '€0.00';
+                        return '€' + eurValue.toLocaleString('de-DE', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+
+                    case 'percentage':
+                        const percentValue = Number(value);
+                        if (isNaN(percentValue)) return '0%';
+                        return percentValue.toFixed(0) + '%';
+
+                    case 'percentage:2':
+                        const percentValue2 = Number(value);
+                        if (isNaN(percentValue2)) return '0.00%';
+                        return percentValue2.toFixed(2) + '%';
+
+                    case 'date':
+                        if (!value) return '';
+                        const date = new Date(value);
+                        if (isNaN(date.getTime())) return '';
+                        const day = date.getDate().toString().padStart(2, '0');
+                        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                        const year = date.getFullYear();
+                        return day + '/' + month + '/' + year;
+
+                    case 'date:yyyy-mm-dd':
+                        if (!value) return '';
+                        const date2 = new Date(value);
+                        if (isNaN(date2.getTime())) return '';
+                        return date2.toISOString().split('T')[0];
+
+                    case 'datetime':
+                        if (!value) return '';
+                        const dateTime = new Date(value);
+                        if (isNaN(dateTime.getTime())) return '';
+                        const day2 = dateTime.getDate().toString().padStart(2, '0');
+                        const month2 = (dateTime.getMonth() + 1).toString().padStart(2, '0');
+                        const year2 = dateTime.getFullYear();
+                        const hours = dateTime.getHours().toString().padStart(2, '0');
+                        const minutes = dateTime.getMinutes().toString().padStart(2, '0');
+                        return day2 + '/' + month2 + '/' + year2 + ' ' + hours + ':' + minutes;
+
+                    case 'truncate:20':
+                        const str = String(value);
+                        return str.length > 20 ? str.substring(0, 20) + '...' : str;
+
+                    case 'truncate:50':
+                        const str2 = String(value);
+                        return str2.length > 50 ? str2.substring(0, 50) + '...' : str2;
+
+                    case 'truncate:100':
+                        const str3 = String(value);
+                        return str3.length > 100 ? str3.substring(0, 100) + '...' : str3;
+
+                    default:
+                        // Formateador personalizado con parámetros
+                        if (formatter.startsWith('number:')) {
+                            const decimals = parseInt(formatter.split(':')[1]) || 0;
+                            const num = Number(value);
+                            if (isNaN(num)) return '0';
+                            return num.toFixed(decimals);
+                        }
+                        
+                        if (formatter.startsWith('currency:')) {
+                            const currency = formatter.split(':')[1]?.toUpperCase() || 'MXN';
+                            const currencyValue2 = Number(value);
+                            if (isNaN(currencyValue2)) return '$0.00';
+                            
+                            const currencySymbols = { USD: '$', MXN: '$', EUR: '€' };
+                            const symbol = currencySymbols[currency] || '$';
+                            const locale = currency === 'USD' ? 'en-US' : currency === 'EUR' ? 'de-DE' : 'es-MX';
+                            
+                            return symbol + currencyValue2.toLocaleString(locale, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        }
+                        
+                        if (formatter.startsWith('percentage:')) {
+                            const decimals = parseInt(formatter.split(':')[1]) || 0;
+                            const percentValue3 = Number(value);
+                            if (isNaN(percentValue3)) return '0%';
+                            return percentValue3.toFixed(decimals) + '%';
+                        }
+                        
+                        if (formatter.startsWith('truncate:')) {
+                            const maxLength = parseInt(formatter.split(':')[1]) || 50;
+                            const str4 = String(value);
+                            return str4.length > maxLength ? str4.substring(0, maxLength) + '...' : str4;
+                        }
+                        
+                        // Si no reconoce el formateador, devolver el valor original
+                        return String(value);
+                }
+            } catch (error) {
+                console.error('Error aplicando formateador:', formatter, error);
+                return String(value);
+            }
         }
         
         // Función para formatear valores de columnas
@@ -2012,6 +2454,26 @@ processTicketTemplate(datos);
 {{empleados;nombre;id=EMP001}}                // Busca empleado con id=EMP001 y obtiene su nombre
             </div>
             
+            <h3>3. Sintaxis de Formateo</h3>
+            <p>Para aplicar formateo a los valores usando la sintaxis <code>|</code>:</p>
+            <div class="code-block">
+{{propiedad | formateador}}
+
+// Ejemplos de formateo:
+{{venta.total | currency}}                    // $1,250.75
+{{empresa.nombre | uppercase}}                // MI EMPRESA S.A.
+{{venta.fecha | date}}                        // 15/01/2024
+{{productos.items;precio;codigo=PROD001 | currency}} // $899.99
+
+// Formateadores disponibles:
+// - uppercase, lowercase, capitalize
+// - number, number:2 (con decimales)
+// - currency, currency:mxn, currency:usd, currency:eur
+// - percentage, percentage:2
+// - date, date:yyyy-mm-dd, datetime
+// - truncate:20, truncate:50, truncate:100
+            </div>
+            
             <h4>Formato de la condición:</h4>
             <ul>
                 <li><strong>propiedad=valor</strong> - Busca elementos donde la propiedad sea igual al valor</li>
@@ -2244,6 +2706,160 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         <title>Editor de Tickets</title>
       </Head>
 
+      {/* Toolbar flotante superior */}
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white shadow-lg rounded-lg border border-gray-200 p-3">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className={`p-2 rounded text-lg transition-colors relative group ${
+              showPreview 
+                ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+            title={showPreview ? 'Ocultar Vista Previa' : 'Mostrar Vista Previa'}
+          >
+            👁️
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {showPreview ? 'Ocultar Vista Previa' : 'Mostrar Vista Previa'}
+            </div>
+          </button>
+          
+          <button
+            onClick={generateHTML}
+            className="p-2 bg-green-600 text-white rounded hover:bg-green-700 text-lg relative group"
+            title="Generar Plantilla HTML"
+          >
+            💾
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Generar Plantilla HTML
+            </div>
+          </button>
+          
+          <button
+            onClick={clearCanvas}
+            className="p-2 bg-red-600 text-white rounded hover:bg-red-700 text-lg relative group"
+            title="Limpiar Todo"
+          >
+            🗑️
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Limpiar Todo
+            </div>
+          </button>
+          
+          <button
+            onClick={generateExampleUsage}
+            className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-lg relative group"
+            title="Ejemplo de uso"
+          >
+            📚
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Ejemplo de uso
+            </div>
+          </button>
+          
+          {/* Exportar/Importar Configuración */}
+          <button
+            onClick={exportProjectConfig}
+            className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-lg relative group"
+            title="Exportar Proyecto"
+          >
+            💾
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Exportar Proyecto
+            </div>
+          </button>
+          
+          <div className="relative group">
+            <input
+              type="file"
+              accept=".json"
+              onChange={importProjectConfig}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              title="Importar Proyecto"
+            />
+            <button
+              className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-lg"
+            >
+              📂
+            </button>
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Importar Proyecto
+            </div>
+          </div>
+          
+          <button
+            onClick={() => {
+              if (showPreview) {
+                const previewFrame = document.querySelector('iframe');
+                if (previewFrame && previewFrame.contentWindow) {
+                  try {
+                    (previewFrame.contentWindow as any).console?.log('=== DEPURACIÓN DE VISTA PREVIA ===');
+                    (previewFrame.contentWindow as any).processAllTables?.();
+                    console.log('✅ Función processAllTables ejecutada en el iframe');
+                  } catch (error) {
+                    console.error('❌ Error al ejecutar processAllTables en el iframe:', error);
+                    // Forzar recarga del iframe como fallback
+                    const currentSrcDoc = previewFrame.getAttribute('srcDoc');
+                    if (currentSrcDoc) {
+                      previewFrame.setAttribute('srcDoc', '');
+                      setTimeout(() => {
+                        previewFrame.setAttribute('srcDoc', currentSrcDoc);
+                      }, 100);
+                    }
+                  }
+                }
+              }
+            }}
+            className="p-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-lg relative group"
+            title="Actualizar Tablas"
+          >
+            🔄
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Actualizar Tablas
+            </div>
+          </button>
+          
+          <button
+            onClick={() => {
+              if (showPreview) {
+                const previewFrame = document.querySelector('iframe');
+                if (previewFrame) {
+                  // Abrir la consola del iframe
+                  previewFrame.contentWindow?.focus();
+                  console.log('💡 Para ver los logs del iframe:');
+                  console.log('1. Haz clic derecho en el iframe');
+                  console.log('2. Selecciona "Inspeccionar"');
+                  console.log('3. Ve a la pestaña "Console"');
+                  console.log('4. Los logs de las tablas aparecerán ahí');
+                }
+              }
+            }}
+            className="p-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-lg relative group"
+            title="Ver Logs"
+          >
+            📋
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Ver Logs
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className={`p-2 rounded text-lg relative group transition-colors ${
+              showDebug 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+            title={showDebug ? 'Ocultar Debugging' : 'Mostrar Debugging'}
+          >
+            🐛
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {showDebug ? 'Ocultar Debugging' : 'Mostrar Debugging'}
+            </div>
+          </button>
+        </div>
+      </div>
+
       <div className="flex h-screen">
         {/* Barra lateral de herramientas */}
         <div className="w-80 bg-white shadow-lg p-4 overflow-y-auto">
@@ -2279,11 +2895,12 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 </span>
               )}
             </div>
-            <div className="text-xs text-gray-600 mt-1">
-              💡 Al cambiar la unidad, el valor se convierte automáticamente
-            </div>
-            <div className="text-xs text-blue-600 mt-1">
-              📏 Conversiones: 1 pulgada = 96px, 1 cm = 37.795px
+            <div className="text-xs text-gray-600 mt-1 group relative">
+              <span className="cursor-help">💡 Al cambiar la unidad, el valor se convierte automáticamente</span>
+              <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                📏 Conversiones: 1 pulgada = 96px, 1 cm = 37.795px
+                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+              </div>
             </div>
             {isConverting && (
               <div className="text-xs text-green-600 mt-1 animate-pulse">
@@ -2439,110 +3056,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
           </div>
 
-          {/* Acciones */}
-          <div className="space-y-2">
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
-                showPreview 
-                  ? 'bg-orange-600 text-white hover:bg-orange-700' 
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              {showPreview ? '👁️ Ocultar Vista Previa' : '👁️ Mostrar Vista Previa'}
-            </button>
-            <button
-              onClick={generateHTML}
-              className="w-full py-2 px-3 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium"
-            >
-              💾 Generar Plantilla HTML
-            </button>
-            <button
-              onClick={clearCanvas}
-              className="w-full py-2 px-3 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium"
-            >
-              🗑️ Limpiar Todo
-            </button>
-                          <button
-                onClick={generateExampleUsage}
-                className="w-full py-2 px-3 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-medium"
-              >
-                📚 Ejemplo de uso
-              </button>
-              
-              {/* Exportar/Importar Configuración */}
-              <div className="space-y-2">
-                <button
-                  onClick={exportProjectConfig}
-                  className="w-full py-2 px-3 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
-                  title="Guardar toda la configuración del proyecto"
-                >
-                  💾 Exportar Proyecto
-                </button>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={importProjectConfig}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    title="Cargar configuración guardada anteriormente"
-                  />
-                  <button
-                    className="w-full py-2 px-3 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium"
-                  >
-                    📂 Importar Proyecto
-                  </button>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  if (showPreview) {
-                    const previewFrame = document.querySelector('iframe');
-                    if (previewFrame && previewFrame.contentWindow) {
-                      try {
-                        (previewFrame.contentWindow as any).console?.log('=== DEPURACIÓN DE VISTA PREVIA ===');
-                        (previewFrame.contentWindow as any).processAllTables?.();
-                        console.log('✅ Función processAllTables ejecutada en el iframe');
-                      } catch (error) {
-                        console.error('❌ Error al ejecutar processAllTables en el iframe:', error);
-                        // Forzar recarga del iframe como fallback
-                        const currentSrcDoc = previewFrame.getAttribute('srcDoc');
-                        if (currentSrcDoc) {
-                          previewFrame.setAttribute('srcDoc', '');
-                          setTimeout(() => {
-                            previewFrame.setAttribute('srcDoc', currentSrcDoc);
-                          }, 100);
-                        }
-                      }
-                    }
-                  }
-                }}
-                className="w-full py-2 px-3 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm font-medium"
-                title="Forzar actualización de tablas en vista previa"
-              >
-                🔄 Actualizar Tablas
-              </button>
-              <button
-                onClick={() => {
-                  if (showPreview) {
-                    const previewFrame = document.querySelector('iframe');
-                    if (previewFrame) {
-                      // Abrir la consola del iframe
-                      previewFrame.contentWindow?.focus();
-                      console.log('💡 Para ver los logs del iframe:');
-                      console.log('1. Haz clic derecho en el iframe');
-                      console.log('2. Selecciona "Inspeccionar"');
-                      console.log('3. Ve a la pestaña "Console"');
-                      console.log('4. Los logs de las tablas aparecerán ahí');
-                    }
-                  }
-                }}
-                className="w-full py-2 px-3 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm font-medium"
-                title="Instrucciones para ver logs del iframe"
-              >
-                📋 Ver Logs
-              </button>
-          </div>
+
 
           {/* Información */}
           <div className="text-xs text-gray-600">
@@ -2555,13 +3069,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               <li>• Haz clic en tablas para configurar</li>
             </ul>
             
-            <p className="mb-2 mt-4"><strong>Controles de Teclado:</strong></p>
-            <ul className="space-y-1">
-              <li>• <strong>Flechas:</strong> Mover elemento seleccionado (5px)</li>
-              <li>• <strong>Shift + Flechas:</strong> Mover más rápido (20px)</li>
-              <li>• <strong>Shift + ←/→:</strong> Cambiar ancho del elemento</li>
-              <li>• <strong>Shift + ↑/↓:</strong> Cambiar altura del elemento</li>
-            </ul>
+           
           </div>
         </div>
 
@@ -2588,6 +3096,80 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               
               return (
                 <div className="space-y-4 pb-4">
+                  {/* Posición X/Y */}
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium mb-1 text-black">
+                      Posición (píxeles):
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-500">X:</label>
+                        <input
+                          type="number"
+                          value={element.x}
+                          onChange={(e) => updateElement(selectedElement, { x: Number(e.target.value) })}
+                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-500">Y:</label>
+                        <input
+                          type="number"
+                          value={element.y}
+                          onChange={(e) => updateElement(selectedElement, { y: Number(e.target.value) })}
+                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tamaño */}
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium mb-1 text-black">
+                      Tamaño (píxeles):
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-500">Ancho:</label>
+                        <input
+                          type="number"
+                          value={element.width}
+                          onChange={(e) => updateElement(selectedElement, { width: Number(e.target.value) })}
+                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          placeholder="150"
+                          max={convertWidth(ticketWidth, widthUnit) - element.x}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-500">Alto:</label>
+                        <input
+                          type="number"
+                          value={element.height}
+                          onChange={(e) => updateElement(selectedElement, { height: Number(e.target.value) })}
+                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          placeholder="30"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Información de límites */}
+                  {showDebug && (
+                    <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded">
+                      <div className="text-xs text-blue-800">
+                        <div><strong>Límites del ticket:</strong></div>
+                        <div>Ancho máximo: {convertWidth(ticketWidth, widthUnit)}px</div>
+                        <div>Ancho disponible: {convertWidth(ticketWidth, widthUnit) - element.x}px</div>
+                        <div>Ancho actual: {element.width}px</div>
+                        {element.width >= convertWidth(ticketWidth, widthUnit) - element.x && (
+                          <div className="text-red-600 font-medium">⚠️ Elemento en ancho máximo</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Posicionamiento relativo */}
                   <div className="mb-4">
                     <label className="block text-xs font-medium mb-1 text-black">
@@ -2687,16 +3269,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   </div>
 
                   {/* Instrucciones de movimiento con teclado */}
-                  <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded">
-                    <label className="block text-xs font-medium mb-1 text-blue-800">
-                      🎯 Movimiento con teclado:
-                    </label>
-                    <div className="text-xs text-blue-700 space-y-1">
-                      <div>• <strong>Flechas:</strong> Mover 5px</div>
-                      <div>• <strong>Shift + Flechas:</strong> Mover 20px</div>
-                      <div>• <strong>Elemento seleccionado:</strong> {selectedElement ? '✓' : '✗'}</div>
-                    </div>
-                  </div>
+                  
 
                   {element.type === 'text' && (
                     <div className="space-y-3">
@@ -2735,16 +3308,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                             <button
                               key={align}
                               onClick={() => updateElementTextAlign(selectedElement, align)}
-                              className={`flex-1 px-3 py-2 text-sm rounded border transition-colors ${
+                              className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
                                 element.textAlign === align 
                                   ? 'bg-blue-500 text-white border-blue-500' 
                                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                               }`}
+                              title={`Alinear ${align === 'left' ? 'izquierda' : align === 'center' ? 'centro' : align === 'right' ? 'derecha' : 'justificar'}`}
                             >
-                              {align === 'left' && 'Izquierda'}
-                              {align === 'center' && 'Centro'}
-                              {align === 'right' && 'Derecha'}
-                              {align === 'justify' && 'Justificar'}
+                              {align === 'left' ? '←' : align === 'center' ? '↔' : align === 'right' ? '→' : '⟷'}
                             </button>
                           ))}
                         </div>
@@ -3457,6 +4028,35 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               onDrop={handleDrop}
               onClick={handleCanvasClick}
             >
+              {/* Debug overlay - mostrar información de límites */}
+              {showDebug && (
+                <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white text-xs p-2 rounded pointer-events-none z-10">
+                  <div>Ticket Width: {ticketWidth} {widthUnit} ({convertWidth(ticketWidth, widthUnit)}px)</div>
+                  <div>Canvas Width: {convertWidth(ticketWidth, widthUnit)}px</div>
+                  {selectedElement && (
+                    <div>
+                      Selected: {selectedElement}
+                      <br />
+                      X: {elements.find(el => el.id === selectedElement)?.x}px
+                      <br />
+                      Width: {elements.find(el => el.id === selectedElement)?.width}px
+                      <br />
+                      Max Width: {convertWidth(ticketWidth, widthUnit) - (elements.find(el => el.id === selectedElement)?.x || 0)}px
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Línea de límite derecho del ticket */}
+              {showDebug && (
+                <div 
+                  className="absolute top-0 bottom-0 w-1 bg-red-500 opacity-50 pointer-events-none"
+                  style={{ 
+                    left: `${convertWidth(ticketWidth, widthUnit)}px`,
+                    zIndex: 5
+                  }}
+                />
+              )}
               {elements.map(element => (
                 <div
                   key={element.id}
@@ -3476,7 +4076,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                     border: element.type === 'text' ? 'none' : '1px solid #ccc',
                     padding: '5px',
                     userSelect: 'none',
-                    minHeight: element.type === 'table' ? '30px' : 'auto'
+                    minHeight: element.type === 'table' ? '30px' : 'auto',
+                    boxShadow: showDebug && element.width >= convertWidth(ticketWidth, widthUnit) - element.x 
+                      ? '0 0 0 2px rgba(239, 68, 68, 0.5)' 
+                      : 'none'
                   }}
                   onClick={() => handleElementClick(element.id)}
                 >
@@ -3515,7 +4118,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         }}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
-                        placeholder={currentJsonData ? "Texto... Usa {{propiedad}} o {{arreglo;propiedad;condición=valor}} para datos JSON" : "Texto..."}
+                        placeholder={currentJsonData ? "Texto... Usa {{propiedad}} o {{arreglo;propiedad;condición=valor}} o {{propiedad | formateador}} para datos JSON" : "Texto..."}
                       />
                       {element.content.includes('{{') && (
                         <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 rounded">
@@ -3534,9 +4137,20 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   
                   {/* Controles de redimensionamiento */}
                   <div
-                    className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-blue-500 opacity-50 hover:opacity-100"
+                    className={`absolute bottom-0 right-0 w-4 h-4 cursor-se-resize ${
+                      showDebug && element.width >= convertWidth(ticketWidth, widthUnit) - element.x 
+                        ? 'bg-red-500' 
+                        : 'bg-blue-500'
+                    } opacity-50 hover:opacity-100 group`}
                     onMouseDown={(e) => handleResizeStart(e, element.id)}
+                    title={showDebug ? `Ancho actual: ${element.width}px | Máximo: ${convertWidth(ticketWidth, widthUnit) - element.x}px` : "Redimensionar"}
                   />
+                  {/* Tooltip de información de límites */}
+                  {showDebug && (
+                    <div className="absolute -top-8 right-0 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                      {element.width}px / {convertWidth(ticketWidth, widthUnit) - element.x}px
+                    </div>
+                  )}
                   
                   {selectedElement === element.id && (
                     <button
