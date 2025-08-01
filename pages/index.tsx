@@ -590,12 +590,45 @@ export default function TicketEditor() {
   const replaceJsonReferences = (content: string, data: any): string => {
     if (!data) return content;
     
-    // Buscar patrones como {{propiedad}} o {{ruta.propiedad}}
+    // Buscar patrones como {{propiedad}} o {{ruta.propiedad}} o {{PropiedadPadre;PropiedadHijo;Condición}}
     return content.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
       try {
+        // Verificar si es la nueva sintaxis con punto y coma (búsqueda condicional)
+        if (path.includes(';')) {
+          const parts = path.split(';');
+          if (parts.length >= 3) {
+            const [arrayPath, propertyToGet, condition] = parts;
+            
+            // Obtener el arreglo
+            const array = arrayPath.split('.').reduce((obj: any, key: string) => obj && obj[key], data);
+            
+            if (Array.isArray(array)) {
+              // Buscar el elemento que cumpla la condición
+              const foundItem = array.find((item: any) => {
+                // La condición puede ser "propiedad=valor" o "propiedad:valor"
+                const [conditionProp, conditionValue] = condition.includes('=') 
+                  ? condition.split('=') 
+                  : condition.split(':');
+                
+                const itemValue = conditionProp.split('.').reduce((obj: any, key: string) => obj && obj[key], item);
+                return String(itemValue) === conditionValue;
+              });
+              
+              if (foundItem) {
+                // Obtener la propiedad específica del elemento encontrado
+                const value = propertyToGet.split('.').reduce((obj: any, key: string) => obj && obj[key], foundItem);
+                return value !== undefined && value !== null ? String(value) : match;
+              }
+            }
+            return match; // Si no se encuentra, mantener el texto original
+          }
+        }
+        
+        // Sintaxis original: {{propiedad}} o {{ruta.propiedad}}
         const value = path.split('.').reduce((obj: any, key: string) => obj && obj[key], data);
         return value !== undefined && value !== null ? String(value) : match;
       } catch (error) {
+        console.error('Error procesando referencia JSON:', path, error);
         return match; // Si hay error, mantener el texto original
       }
     });
@@ -1377,8 +1410,40 @@ export default function TicketEditor() {
             
             return content.replace(/\\{\\{([^}]+)\\}\\}/g, (match, path) => {
                 try {
+                    // Verificar si es la nueva sintaxis con punto y coma (búsqueda condicional)
+                    if (path.includes(';')) {
+                        const parts = path.split(';');
+                        if (parts.length >= 3) {
+                            const [arrayPath, propertyToGet, condition] = parts;
+                            
+                            // Obtener el arreglo
+                            const array = getValueByPath(data, arrayPath);
+                            
+                            if (Array.isArray(array)) {
+                                // Buscar el elemento que cumpla la condición
+                                const foundItem = array.find((item) => {
+                                    // La condición puede ser "propiedad=valor" o "propiedad:valor"
+                                    const [conditionProp, conditionValue] = condition.includes('=') 
+                                        ? condition.split('=') 
+                                        : condition.split(':');
+                                    
+                                    const itemValue = getValueByPath(item, conditionProp);
+                                    return String(itemValue) === conditionValue;
+                                });
+                                
+                                if (foundItem) {
+                                    // Obtener la propiedad específica del elemento encontrado
+                                    const value = getValueByPath(foundItem, propertyToGet);
+                                    return value !== undefined && value !== null ? String(value) : match;
+                                }
+                            }
+                            return match; // Si no se encuentra, mantener el texto original
+                        }
+                    }
+                    
+                    // Sintaxis original: {{propiedad}} o {{ruta.propiedad}}
                     const value = getValueByPath(data, path);
-                    return value !== undefined ? String(value) : match;
+                    return value !== undefined && value !== null ? String(value) : match;
                 } catch (error) {
                     console.error('Error al reemplazar placeholder:', path, error);
                     return match;
@@ -1921,6 +1986,53 @@ processTicketTemplate(datos);
         "direccion": "string"
     }
 }
+            </div>
+        </div>
+        
+        <div class="example-section">
+            <h2>🔤 Sintaxis de Placeholders</h2>
+            <p>La plantilla soporta dos tipos de sintaxis para acceder a datos JSON:</p>
+            
+            <h3>1. Sintaxis Básica</h3>
+            <p>Para acceder a propiedades simples o anidadas:</p>
+            <div class="code-block">
+{{empresa.nombre}}           // "Mi Empresa S.A."
+{{venta.total}}             // 1250.75
+{{productos.items.0.nombre}} // "Laptop HP Pavilion"
+            </div>
+            
+            <h3>2. Sintaxis de Búsqueda Condicional</h3>
+            <p>Para buscar elementos en arreglos basándose en condiciones:</p>
+            <div class="code-block">
+{{arreglo;propiedad;condición=valor}}
+
+// Ejemplos:
+{{productos.items;nombre;codigo=PROD001}}     // Busca item con codigo=PROD001 y obtiene su nombre
+{{productos.items;precio;categoria=Electronics}} // Busca item con categoria=Electronics y obtiene su precio
+{{empleados;nombre;id=EMP001}}                // Busca empleado con id=EMP001 y obtiene su nombre
+            </div>
+            
+            <h4>Formato de la condición:</h4>
+            <ul>
+                <li><strong>propiedad=valor</strong> - Busca elementos donde la propiedad sea igual al valor</li>
+                <li><strong>propiedad:valor</strong> - Alternativa usando dos puntos</li>
+            </ul>
+            
+            <h4>Ejemplo completo:</h4>
+            <div class="code-block">
+// Datos JSON:
+{
+    "productos": {
+        "items": [
+            {"codigo": "PROD001", "nombre": "Laptop", "precio": 899.99},
+            {"codigo": "PROD002", "nombre": "Mouse", "precio": 25.50}
+        ]
+    }
+}
+
+// En el texto del ticket:
+Producto: {{productos.items;nombre;codigo=PROD001}}  // Resultado: "Laptop"
+Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             </div>
         </div>
         
@@ -3403,7 +3515,7 @@ processTicketTemplate(datos);
                         }}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
-                        placeholder={currentJsonData ? "Texto... Usa {{propiedad}} para datos JSON" : "Texto..."}
+                        placeholder={currentJsonData ? "Texto... Usa {{propiedad}} o {{arreglo;propiedad;condición=valor}} para datos JSON" : "Texto..."}
                       />
                       {element.content.includes('{{') && (
                         <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 rounded">
