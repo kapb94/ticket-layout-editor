@@ -61,7 +61,7 @@ import {
 
 interface TicketElement {
   id: string;
-  type: 'text' | 'table' | 'qr' | 'image';
+  type: 'text' | 'table' | 'qr' | 'image' | 'formula';
   x: number;
   y: number;
   width: number;
@@ -118,6 +118,14 @@ interface ImageConfig {
   mimeType?: string;
   maintainAspectRatio?: boolean;
   objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
+}
+
+interface FormulaConfig {
+  javascriptCode: string;
+  outputFormat: 'text' | 'number' | 'boolean' | 'json';
+  errorHandling: 'show-error' | 'hide-error' | 'show-default';
+  defaultValue: string;
+  timeout: number; // milliseconds
 }
 
 // Interfaz para la configuración completa del proyecto
@@ -531,7 +539,7 @@ export default function TicketEditor() {
     const elementType = e.dataTransfer.getData('text/plain');
     
     if (elementType.startsWith('new-')) {
-              const type = elementType.replace('new-', '') as 'text' | 'table' | 'qr' | 'image';
+              const type = elementType.replace('new-', '') as 'text' | 'table' | 'qr' | 'image' | 'formula';
       const rect = canvasRef.current?.getBoundingClientRect();
       
       if (rect) {
@@ -564,9 +572,9 @@ export default function TicketEditor() {
           type,
           x: finalX,
           y: finalY,
-          width: type === 'text' ? 150 : type === 'qr' ? 100 : type === 'image' ? 150 : 200,
-          height: type === 'text' ? 30 : type === 'qr' ? 100 : type === 'image' ? 150 : 100,
-          content: type === 'text' ? 'Texto de ejemplo' : type === 'qr' ? 'https://ejemplo.com' : type === 'image' ? 'Seleccionar imagen...' : '',
+          width: type === 'text' ? 150 : type === 'qr' ? 100 : type === 'image' ? 150 : type === 'formula' ? 150 : 200,
+          height: type === 'text' ? 30 : type === 'qr' ? 100 : type === 'image' ? 150 : type === 'formula' ? 100 : 100,
+          content: type === 'text' ? 'Texto de ejemplo' : type === 'qr' ? 'https://ejemplo.com' : type === 'image' ? 'Seleccionar imagen...' : type === 'formula' ? 'JavaScript code' : '',
           fontSize: type === 'text' ? 14 : 12,
           textAlign: type === 'text' ? 'left' : undefined,
           config: type === 'table' ? {
@@ -581,6 +589,12 @@ export default function TicketEditor() {
             mimeType: undefined,
             maintainAspectRatio: true,
             objectFit: 'contain'
+          } : type === 'formula' ? {
+            javascriptCode: '',
+            outputFormat: 'text',
+            errorHandling: 'show-default',
+            defaultValue: '',
+            timeout: 5000
           } : undefined,
           ...relativeConfig
         };
@@ -877,6 +891,80 @@ export default function TicketEditor() {
         return match; // Si hay error, mantener el texto original
       }
     });
+  };
+
+  const executeFormula = async (element: TicketElement, data: any): Promise<string> => {
+    if (element.type !== 'formula' || !element.config?.javascriptCode) {
+      return '';
+    }
+
+    const config = element.config as FormulaConfig;
+    const code = config.javascriptCode.trim();
+
+    if (!code) {
+      return config.defaultValue || '';
+    }
+
+    try {
+      const executeWithTimeout = (code: string, timeout: number): Promise<any> => {
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error('Execution timeout'));
+          }, timeout);
+
+          try {
+            const safeFunction = new Function('data', 'Math', 'String', 'Number', 'Boolean', 'Array', 'Object', 'Date', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', code);
+
+            const result = safeFunction(
+              data,
+              Math,
+              String,
+              Number,
+              Boolean,
+              Array,
+              Object,
+              Date,
+              parseInt,
+              parseFloat,
+              isNaN,
+              isFinite
+            );
+
+            clearTimeout(timeoutId);
+            resolve(result);
+          } catch (error) {
+            clearTimeout(timeoutId);
+            reject(error);
+          }
+        });
+      };
+
+      const result = await executeWithTimeout(code, config.timeout || 5000);
+
+      switch (config.outputFormat) {
+        case 'number':
+          return typeof result === 'number' ? result.toString() : config.defaultValue || '0';
+        case 'boolean':
+          return typeof result === 'boolean' ? result.toString() : config.defaultValue || 'false';
+        case 'json':
+          return typeof result === 'object' ? JSON.stringify(result) : config.defaultValue || '{}';
+        case 'text':
+        default:
+          return result !== undefined && result !== null ? result.toString() : config.defaultValue || '';
+      }
+    } catch (error) {
+      console.error('Error executing formula:', error);
+
+      switch (config.errorHandling) {
+        case 'show-error':
+          return `Error: ${error.message}`;
+        case 'hide-error':
+          return '';
+        case 'show-default':
+        default:
+          return config.defaultValue || '';
+      }
+    }
   };
 
   // Función para formatear valores usando formateadores
@@ -1435,6 +1523,13 @@ export default function TicketEditor() {
             Sin imagen
         </div>`;
         }
+      } else if (element.type === 'formula') {
+        const formulaFontSize = element.fontSize || 12;
+        const textAlign = element.textAlign || 'left';
+        html += `
+        <div class="element text-element" data-element-id="${element.id}" data-formula="true" style="${style} font-size: ${formulaFontSize}px; color: #000000; position: absolute; border: none; padding: 5px; box-sizing: border-box; background: transparent; text-align: ${textAlign}; display: flex; align-items: center; justify-content: ${textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : textAlign === 'justify' ? 'stretch' : 'flex-start'};">
+            <span class="formula-result" data-formula-id="${element.id}">Ejecutando fórmula...</span>
+        </div>`;
       }
     }
 
@@ -1800,6 +1895,106 @@ export default function TicketEditor() {
             });
         }
         
+        // Función para ejecutar fórmulas JavaScript de forma segura
+        async function executeFormula(code, data, outputFormat, errorHandling, defaultValue, timeout) {
+            if (!code || code.trim() === '') {
+                return defaultValue || '';
+            }
+
+            try {
+                const executeWithTimeout = (code, timeout) => {
+                    return new Promise((resolve, reject) => {
+                        const timeoutId = setTimeout(() => {
+                            reject(new Error('Execution timeout'));
+                        }, timeout);
+
+                        try {
+                            const safeFunction = new Function('data', 'Math', 'String', 'Number', 'Boolean', 'Array', 'Object', 'Date', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', code);
+
+                            const result = safeFunction(
+                                data,
+                                Math,
+                                String,
+                                Number,
+                                Boolean,
+                                Array,
+                                Object,
+                                Date,
+                                parseInt,
+                                parseFloat,
+                                isNaN,
+                                isFinite
+                            );
+
+                            clearTimeout(timeoutId);
+                            resolve(result);
+                        } catch (error) {
+                            clearTimeout(timeoutId);
+                            reject(error);
+                        }
+                    });
+                };
+
+                const result = await executeWithTimeout(code, timeout || 5000);
+
+                switch (outputFormat) {
+                    case 'number':
+                        return typeof result === 'number' ? result.toString() : defaultValue || '0';
+                    case 'boolean':
+                        return typeof result === 'boolean' ? result.toString() : defaultValue || 'false';
+                    case 'json':
+                        return typeof result === 'object' ? JSON.stringify(result) : defaultValue || '{}';
+                    case 'text':
+                    default:
+                        return result !== undefined && result !== null ? result.toString() : defaultValue || '';
+                }
+            } catch (error) {
+                console.error('Error executing formula:', error);
+
+                switch (errorHandling) {
+                    case 'show-error':
+                        return 'Error: ' + error.message;
+                    case 'hide-error':
+                        return '';
+                    case 'show-default':
+                    default:
+                        return defaultValue || '';
+                }
+            }
+        }
+
+        // Función para ejecutar todas las fórmulas
+        function executeAllFormulas() {
+            console.log('Ejecutando fórmulas en vista previa...');
+            const formulaElements = document.querySelectorAll('[data-formula="true"]');
+            formulaElements.forEach(element => {
+                const formulaId = element.getAttribute('data-element-id');
+                const resultSpan = element.querySelector('.formula-result');
+                let ticketData = ${JSON.stringify(currentJsonData)};
+                if (resultSpan && ticketData) {
+                    // Obtener la configuración de la fórmula desde los datos del elemento
+                    const formulaConfig = ${JSON.stringify(elements.filter(el => el.type === 'formula').map(el => ({
+                        id: el.id,
+                        config: el.config
+                    })))};
+                    
+                    const config = formulaConfig.find(f => f.id === formulaId);
+                    if (config && config.config) {
+                        const { javascriptCode, outputFormat, errorHandling, defaultValue, timeout } = config.config;
+                        
+                        executeFormula(javascriptCode, ticketData, outputFormat, errorHandling, defaultValue, timeout)
+                            .then(result => {
+                                resultSpan.textContent = result;
+                            })
+                            .catch(error => {
+                                console.error('Error ejecutando fórmula:', error);
+                                resultSpan.textContent = 'Error en fórmula';
+                            });
+                    }
+                }
+            });
+        }
+        
         // Ejecutar inmediatamente y también cuando el DOM esté listo
         console.log('Script de vista previa cargado');
         
@@ -1808,6 +2003,7 @@ export default function TicketEditor() {
             if (typeof QRCode !== 'undefined') {
                 generateAllQRCodes();
                 processAllTables();
+                executeAllFormulas();
                 
                 // Ajustar posiciones después de que las tablas se llenen
                 setTimeout(() => {
@@ -1959,6 +2155,13 @@ export default function TicketEditor() {
             Sin imagen
         </div>`;
         }
+      } else if (element.type === 'formula') {
+        const formulaFontSize = element.fontSize || 12;
+        const textAlign = element.textAlign || 'left';
+        html += `
+        <div class="element text-element" data-element-id="${element.id}" data-formula="true" style="${style} font-size: ${formulaFontSize}px; color: #000000; text-align: ${textAlign}; display: flex; align-items: center; justify-content: ${textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : textAlign === 'justify' ? 'stretch' : 'flex-start'}; border: none;">
+            <span class="formula-result" data-formula-id="${element.id}">Ejecutando fórmula...</span>
+        </div>`;
       }
     }
 
@@ -2453,6 +2656,106 @@ export default function TicketEditor() {
             });
         }
         
+        // Función para ejecutar fórmulas JavaScript de forma segura
+        async function executeFormula(code, data, outputFormat, errorHandling, defaultValue, timeout) {
+            if (!code || code.trim() === '') {
+                return defaultValue || '';
+            }
+
+            try {
+                const executeWithTimeout = (code, timeout) => {
+                    return new Promise((resolve, reject) => {
+                        const timeoutId = setTimeout(() => {
+                            reject(new Error('Execution timeout'));
+                        }, timeout);
+
+                        try {
+                            const safeFunction = new Function('data', 'Math', 'String', 'Number', 'Boolean', 'Array', 'Object', 'Date', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', code);
+
+                            const result = safeFunction(
+                                data,
+                                Math,
+                                String,
+                                Number,
+                                Boolean,
+                                Array,
+                                Object,
+                                Date,
+                                parseInt,
+                                parseFloat,
+                                isNaN,
+                                isFinite
+                            );
+
+                            clearTimeout(timeoutId);
+                            resolve(result);
+                        } catch (error) {
+                            clearTimeout(timeoutId);
+                            reject(error);
+                        }
+                    });
+                };
+
+                const result = await executeWithTimeout(code, timeout || 5000);
+
+                switch (outputFormat) {
+                    case 'number':
+                        return typeof result === 'number' ? result.toString() : defaultValue || '0';
+                    case 'boolean':
+                        return typeof result === 'boolean' ? result.toString() : defaultValue || 'false';
+                    case 'json':
+                        return typeof result === 'object' ? JSON.stringify(result) : defaultValue || '{}';
+                    case 'text':
+                    default:
+                        return result !== undefined && result !== null ? result.toString() : defaultValue || '';
+                }
+            } catch (error) {
+                console.error('Error executing formula:', error);
+
+                switch (errorHandling) {
+                    case 'show-error':
+                        return 'Error: ' + error.message;
+                    case 'hide-error':
+                        return '';
+                    case 'show-default':
+                    default:
+                        return defaultValue || '';
+                }
+            }
+        }
+
+        // Función para ejecutar todas las fórmulas
+        function executeAllFormulas() {
+            console.log('Ejecutando fórmulas en HTML exportado...');
+            const formulaElements = document.querySelectorAll('[data-formula="true"]');
+            formulaElements.forEach(element => {
+                const formulaId = element.getAttribute('data-element-id');
+                const resultSpan = element.querySelector('.formula-result');
+                
+                if (resultSpan && ticketData) {
+                    // Obtener la configuración de la fórmula desde los datos del elemento
+                    const formulaConfig = ${JSON.stringify(elements.filter(el => el.type === 'formula').map(el => ({
+                        id: el.id,
+                        config: el.config
+                    })))};
+                    
+                    const config = formulaConfig.find(f => f.id === formulaId);
+                    if (config && config.config) {
+                        const { javascriptCode, outputFormat, errorHandling, defaultValue, timeout } = config.config;
+                        
+                        executeFormula(javascriptCode, ticketData, outputFormat, errorHandling, defaultValue, timeout)
+                            .then(result => {
+                                resultSpan.textContent = result;
+                            })
+                            .catch(error => {
+                                console.error('Error ejecutando fórmula:', error);
+                                resultSpan.textContent = 'Error en fórmula';
+                            });
+                    }
+                }
+            });
+        }
+        
         // Función principal para procesar toda la plantilla
         function processTicketTemplate(data) {
             ticketData = data;
@@ -2479,6 +2782,9 @@ export default function TicketEditor() {
             
             // Generar todos los QR codes
             generateAllQRCodes();
+            
+            // Ejecutar todas las fórmulas
+            executeAllFormulas();
             
             // Ajustar posiciones relativas después de que las tablas se llenen
             setTimeout(adjustRelativePositions, 200);
@@ -3859,6 +4165,17 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           <Image size={12} className="text-orange-600" />
                         </div>
                         <span className="font-medium">Imagen</span>
+                      </div>
+                      
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'formula')}
+                        className="p-2 bg-red-50 border border-red-200 rounded cursor-move hover:bg-red-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-red-100 rounded flex items-center justify-center">
+                          <Code size={12} className="text-red-600" />
+                        </div>
+                        <span className="font-medium">Fórmula JavaScript</span>
                       </div>
                     </div>
                     <button
@@ -5736,7 +6053,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                 className="border-2 border-dashed border-gray-300 bg-gray-50 relative"
                 style={{ 
                   width: `${convertWidth(ticketWidth, widthUnit)}px`,
-                  height: '600px',
+                  minHeight: '1200px',
                   margin: '20px auto',
                   transform: `scale(${zoomLevel})`,
                   transformOrigin: 'top center'
