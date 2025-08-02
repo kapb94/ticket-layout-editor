@@ -957,7 +957,7 @@ export default function TicketEditor() {
 
       switch (config.errorHandling) {
         case 'show-error':
-          return `Error: ${error.message}`;
+          return `Error: ${(error as Error).message}`;
         case 'hide-error':
           return '';
         case 'show-default':
