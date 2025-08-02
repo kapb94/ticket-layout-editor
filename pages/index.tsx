@@ -6013,7 +6013,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         )}
 
         {/* Área de diseño */}
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-4 overflow-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 h-full">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold text-black">Área de Diseño</h2>
