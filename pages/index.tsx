@@ -573,7 +573,7 @@ export default function TicketEditor() {
           x: finalX,
           y: finalY,
           width: type === 'text' ? 150 : type === 'qr' ? 100 : type === 'image' ? 150 : type === 'formula' ? 150 : 200,
-          height: type === 'text' ? 30 : type === 'qr' ? 100 : type === 'image' ? 150 : type === 'formula' ? 100 : 100,
+          height: type === 'text' ? 30 : type === 'qr' ? 100 : type === 'image' ? 150 : type === 'formula' ? 30 : 100,
           content: type === 'text' ? 'Texto de ejemplo' : type === 'qr' ? 'https://ejemplo.com' : type === 'image' ? 'Seleccionar imagen...' : type === 'formula' ? 'JavaScript code' : '',
           fontSize: type === 'text' ? 14 : 12,
           textAlign: type === 'text' ? 'left' : undefined,
@@ -1407,7 +1407,7 @@ export default function TicketEditor() {
             width: ${widthPx}px;
             border: none;
             position: relative;
-            background: white;
+            
             margin: 0;
             min-height: ${contentHeight}px;
             padding: 0;
@@ -6222,14 +6222,12 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                     </div>
                   ) : element.type === 'formula' ? (
                     <div className="relative w-full h-full flex items-center justify-center">
-                      <div className="w-full h-full flex items-center justify-center bg-white border border-gray-300 rounded">
+                      <div className="w-full h-full flex items-center justify-center ">
                         <div className="text-center">
-                          <div className="w-8 h-8 mx-auto mb-1 bg-red-100 rounded flex items-center justify-center">
-                            <Code size={16} className="text-red-600" />
-                          </div>
-                          <div className="text-xs text-gray-600 font-medium">Fórmula</div>
+                          
+                          
                           <div className="text-xs text-gray-500 mt-1">
-                            {element.config?.javascriptCode || "Código JavaScript..."}
+                            {element.config?.javascriptCode || "Código JavaScript<>..."}
                           </div>
                         </div>
                       </div>
