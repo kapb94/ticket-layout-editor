@@ -51,3 +51,216 @@ label {
 .element textarea {
   color: #000000 !important;
 }
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+}
+
+/* Scrollbar para Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* Scrollbar personalizada para el panel de propiedades */
+.properties-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.properties-panel::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 3px;
+}
+
+.properties-panel::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+.properties-panel::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* Scrollbar personalizada para el sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* Scrollbar personalizada para el editor de código */
+.code-editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+.code-editor::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.code-editor::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.code-editor::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Scrollbar personalizada para CodeMirror específicamente */
+.cm-editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cm-editor::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.cm-editor::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.cm-editor::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Scrollbar para el contenido de CodeMirror */
+.cm-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cm-content::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.cm-content::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.cm-content::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Scrollbar personalizada para el iframe de vista previa */
+.preview-iframe::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.preview-iframe::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.preview-iframe::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.preview-iframe::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+.preview-iframe::-webkit-scrollbar-corner {
+  background: #f8fafc;
+}
+
+/* Scrollbar para el contenido dentro del iframe */
+.preview-iframe iframe::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.preview-iframe iframe::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.preview-iframe iframe::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.preview-iframe iframe::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* Estilos para el contenido HTML generado dentro del iframe */
+.preview-iframe html::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.preview-iframe html::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.preview-iframe html::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.preview-iframe html::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+.preview-iframe body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.preview-iframe body::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.preview-iframe body::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.preview-iframe body::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}

@@ -276,7 +276,7 @@ const CodeMirrorEditor = ({ value, onChange, placeholder }: {
 
   return (
     <div className="w-full">
-      <div ref={editorRef} className="w-full border-2 border-gray-300 rounded-md" />
+      <div ref={editorRef} className="w-full border-2 border-gray-300 rounded-md code-editor" />
       <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
         <span>💡 Tip: Usa <code className="bg-gray-100 px-1 rounded">data</code> para acceder a los datos JSON</span>
         
@@ -1546,6 +1546,37 @@ export default function TicketEditor() {
             padding: 0;
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
+        }
+        
+        /* Scrollbar personalizada para el iframe de vista previa */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f8fafc;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
+        
+        ::-webkit-scrollbar-corner {
+            background: #f8fafc;
+        }
+        
+        /* Scrollbar para Firefox */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #e2e8f0 #f8fafc;
         }
         .ticket {
             width: ${widthPx}px;
@@ -4444,7 +4475,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         {/* Barra lateral de herramientas */}
         {!sidebarHidden && (
           <div 
-            className="bg-gradient-to-b from-gray-50 to-white shadow-xl border-r border-gray-200 overflow-y-auto"
+            className="bg-gradient-to-b from-gray-50 to-white shadow-xl border-r border-gray-200 overflow-y-auto sidebar"
             style={{ width: `${sidebarWidth}px` }}
           >
           {/* Header */}
@@ -4715,7 +4746,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         {/* Panel de propiedades */}
         {showProperties && selectedElement && (
           <div 
-            className="bg-white shadow-lg p-6 border-l border-gray-200 overflow-y-auto max-h-screen"
+            className="bg-white shadow-lg p-6 border-l border-gray-200 overflow-y-auto max-h-screen properties-panel"
             style={{ width: `${propertiesWidth}px` }}
           >
             <div className="flex justify-between items-center mb-6">
