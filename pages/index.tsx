@@ -276,11 +276,10 @@ const CodeMirrorEditor = ({ value, onChange, placeholder }: {
 
   return (
     <div className="w-full">
-      <div ref={editorRef} className="w-full" />
+      <div ref={editorRef} className="w-full border-2 border-gray-300 rounded-md" />
       <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
         <span>💡 Tip: Usa <code className="bg-gray-100 px-1 rounded">data</code> para acceder a los datos JSON</span>
-        <span>•</span>
-        <span>Ctrl+Enter para ejecutar</span>
+        
       </div>
     </div>
   );
@@ -4716,20 +4715,20 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         {/* Panel de propiedades */}
         {showProperties && selectedElement && (
           <div 
-            className="bg-white shadow-lg p-4 border-l border-gray-200 overflow-y-auto max-h-screen"
+            className="bg-white shadow-lg p-6 border-l border-gray-200 overflow-y-auto max-h-screen"
             style={{ width: `${propertiesWidth}px` }}
           >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-black">Propiedades</h3>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-800">Propiedades</h3>
               <button
                 onClick={() => {
                   setShowProperties(false);
                   setSelectedElement(null);
                 }}
-                className="text-gray-500 hover:text-gray-700 w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
+                className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-all duration-200"
                 title="Cerrar"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
             
@@ -4738,30 +4737,30 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
               if (!element) return null;
               
               return (
-                <div className="space-y-4 pb-4">
+                <div className="space-y-6 pb-4">
                   {/* Posición X/Y */}
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium mb-1 text-black">
-                      Posición (píxeles):
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Posición (píxeles)
                     </label>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="block text-xs text-gray-500">X:</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">X</label>
                         <input
                           type="number"
                           value={element.x}
                           onChange={(e) => updateElement(selectedElement, { x: Number(e.target.value) })}
-                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           placeholder="0"
                         />
                       </div>
-                      <div className="flex-1">
-                        <label className="block text-xs text-gray-500">Y:</label>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Y</label>
                         <input
                           type="number"
                           value={element.y}
                           onChange={(e) => updateElement(selectedElement, { y: Number(e.target.value) })}
-                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           placeholder="0"
                         />
                       </div>
@@ -4769,29 +4768,29 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   </div>
 
                   {/* Tamaño */}
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium mb-1 text-black">
-                      Tamaño (píxeles):
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Tamaño (píxeles)
                     </label>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="block text-xs text-gray-500">Ancho:</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Ancho</label>
                         <input
                           type="number"
                           value={element.width}
                           onChange={(e) => updateElement(selectedElement, { width: Number(e.target.value) })}
-                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           placeholder="150"
                           max={convertWidth(ticketWidth, widthUnit) - element.x}
                         />
                       </div>
-                      <div className="flex-1">
-                        <label className="block text-xs text-gray-500">Alto:</label>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Alto</label>
                         <input
                           type="number"
                           value={element.height}
                           onChange={(e) => updateElement(selectedElement, { height: Number(e.target.value) })}
-                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           placeholder="30"
                         />
                       </div>
@@ -4800,9 +4799,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
                   {/* Información de límites */}
                   {showDebug && (
-                    <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded">
-                      <div className="text-xs text-blue-800">
-                        <div><strong>Límites del ticket:</strong></div>
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="text-sm text-blue-800 space-y-1">
+                        <div className="font-medium">Límites del ticket:</div>
                         <div>Ancho máximo: {convertWidth(ticketWidth, widthUnit)}px</div>
                         <div>Ancho disponible: {convertWidth(ticketWidth, widthUnit) - element.x}px</div>
                         <div>Ancho actual: {element.width}px</div>
@@ -4814,21 +4813,21 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   )}
 
                   {/* Posicionamiento relativo */}
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium mb-1 text-black">
-                      Posicionamiento relativo:
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Posicionamiento relativo
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {/* Elemento de referencia */}
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">Relativo a:</label>
+                        <label className="block text-xs text-gray-500 mb-2">Relativo a</label>
                         <select
                           value={element.relativeTo || ''}
                           onChange={(e) => updateElement(selectedElement, { 
                             relativeTo: e.target.value || undefined,
                             relativePosition: e.target.value ? (element.relativePosition || 'below') : undefined
                           })}
-                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         >
                           <option value="">Ninguno (posición absoluta)</option>
                           {elements.filter(el => el.id !== selectedElement).map(el => (
@@ -4850,18 +4849,18 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           <label className="block text-xs text-gray-600 mb-1">Posición Relativa:</label>
                           
                           {/* Selector de modo */}
-                          <div className="mb-2">
-                            <div className="flex gap-1 text-xs">
+                          <div className="mb-3">
+                            <div className="flex gap-2">
                               <button
                                 onClick={() => updateElement(selectedElement, { 
                                   relativePosition: undefined,
                                   relativeVertical: undefined,
                                   relativeHorizontal: undefined
                                 })}
-                                className={`px-2 py-1 rounded border transition-colors ${
+                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
                                   !element.relativePosition && !element.relativeVertical && !element.relativeHorizontal
-                                    ? 'bg-blue-500 text-white border-blue-500' 
-                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                                 }`}
                               >
                                 Manual
@@ -4872,10 +4871,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                   relativeVertical: undefined,
                                   relativeHorizontal: undefined
                                 })}
-                                className={`px-2 py-1 rounded border transition-colors ${
+                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
                                   element.relativePosition && !element.relativeVertical && !element.relativeHorizontal
-                                    ? 'bg-blue-500 text-white border-blue-500' 
-                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                                 }`}
                               >
                                 Predefinida
@@ -4886,10 +4885,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                   relativeVertical: 'bottom',
                                   relativeHorizontal: 'left'
                                 })}
-                                className={`px-2 py-1 rounded border transition-colors ${
+                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
                                   !element.relativePosition && (element.relativeVertical || element.relativeHorizontal)
-                                    ? 'bg-blue-500 text-white border-blue-500' 
-                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                                 }`}
                               >
                                 Personalizada
@@ -4899,15 +4898,15 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
                           {/* Posiciones predefinidas */}
                           {(element.relativePosition && !element.relativeVertical && !element.relativeHorizontal) && (
-                            <div className="grid grid-cols-3 gap-1 mb-2">
+                            <div className="grid grid-cols-3 gap-2 mb-3">
                               {(['top-left', 'above', 'top-right', 'left', 'center', 'right', 'bottom-left', 'below', 'bottom-right'] as const).map((pos) => (
                                 <button
                                   key={pos}
                                   onClick={() => updateElement(selectedElement, { relativePosition: pos })}
-                                  className={`px-2 py-1 text-xs rounded border transition-colors ${
+                                  className={`p-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
                                     element.relativePosition === pos 
-                                      ? 'bg-blue-500 text-white border-blue-500' 
-                                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                      ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                                   }`}
                                   title={pos.replace('-', ' ')}
                                 >
@@ -4927,19 +4926,19 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
                           {/* Posiciones personalizadas */}
                           {(!element.relativePosition && (element.relativeVertical || element.relativeHorizontal)) && (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               {/* Posición vertical */}
                               <div>
-                                <label className="block text-xs text-gray-500 mb-1">Vertical:</label>
-                                <div className="flex gap-1">
+                                <label className="block text-xs text-gray-500 mb-2">Vertical</label>
+                                <div className="flex gap-2">
                                   {(['top', 'center', 'bottom'] as const).map((pos) => (
                                     <button
                                       key={pos}
                                       onClick={() => updateElement(selectedElement, { relativeVertical: pos })}
-                                      className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
+                                      className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
                                         element.relativeVertical === pos 
-                                          ? 'bg-blue-500 text-white border-blue-500' 
-                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                          ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                                       }`}
                                     >
                                       {pos === 'top' && <ArrowUp size={14} />}
@@ -4952,16 +4951,16 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
                               {/* Posición horizontal */}
                               <div>
-                                <label className="block text-xs text-gray-500 mb-1">Horizontal:</label>
-                                <div className="flex gap-1">
+                                <label className="block text-xs text-gray-500 mb-2">Horizontal</label>
+                                <div className="flex gap-2">
                                   {(['left', 'center', 'right'] as const).map((pos) => (
                                     <button
                                       key={pos}
                                       onClick={() => updateElement(selectedElement, { relativeHorizontal: pos })}
-                                      className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
+                                      className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
                                         element.relativeHorizontal === pos 
-                                          ? 'bg-blue-500 text-white border-blue-500' 
-                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                          ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                                       }`}
                                     >
                                       {pos === 'left' && <ArrowLeft size={14} />}
@@ -4978,11 +4977,11 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
                       {/* Offset */}
                       {element.relativeTo && (element.relativePosition || element.relativeVertical || element.relativeHorizontal) && (
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1">Offset (px):</label>
-                          <div className="flex gap-2">
-                            <div className="flex-1">
-                              <label className="block text-xs text-gray-500">X:</label>
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-gray-700">Offset (px)</label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">X</label>
                               <input
                                 type="number"
                                 value={element.relativeOffset?.x || 0}
@@ -4992,12 +4991,12 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                     y: element.relativeOffset?.y || 0 
                                   } 
                                 })}
-                                className="w-full px-2 py-1 border rounded text-xs text-black"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                                 placeholder="0"
                               />
                             </div>
-                            <div className="flex-1">
-                              <label className="block text-xs text-gray-500">Y:</label>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Y</label>
                               <input
                                 type="number"
                                 value={element.relativeOffset?.y || 0}
@@ -5007,7 +5006,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                     y: Number(e.target.value) 
                                   } 
                                 })}
-                                className="w-full px-2 py-1 border rounded text-xs text-black"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                                 placeholder="0"
                               />
                             </div>
@@ -5021,57 +5020,57 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   
 
                   {element.type === 'text' && (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Contenido:</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Contenido</label>
                         <textarea
                           value={element.content}
                           onChange={(e) => updateElement(selectedElement, { content: e.target.value })}
-                          className="w-full px-3 py-2 border rounded text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           rows={3}
                           placeholder="Texto del elemento..."
                         />
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Tamaño de fuente:</label>
-                        <div className="flex items-center gap-2">
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Tamaño de fuente</label>
+                        <div className="flex items-center gap-3">
                           <input
                             type="range"
                             min="8"
                             max="32"
                             value={element.fontSize || 14}
                             onChange={(e) => updateElementFontSize(selectedElement, Number(e.target.value))}
-                            className="flex-1"
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                           />
-                          <span className="text-sm text-black w-8">
+                          <span className="text-sm text-gray-700 w-12 text-center font-medium">
                             {element.fontSize || 14}px
                           </span>
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Alineación:</label>
-                        <div className="flex gap-1">
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Alineación</label>
+                        <div className="flex gap-2">
                           {(['left', 'center', 'right', 'justify'] as const).map((align) => (
                             <button
                               key={align}
                               onClick={() => updateElementTextAlign(selectedElement, align)}
-                              className={`flex-1 px-2 py-1 text-xs rounded border transition-colors flex items-center justify-center ${
+                              className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
                                 element.textAlign === align 
-                                  ? 'bg-blue-500 text-white border-blue-500' 
-                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                  ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                               }`}
                               title={`Alinear ${align === 'left' ? 'izquierda' : align === 'center' ? 'centro' : align === 'right' ? 'derecha' : 'justificar'}`}
                             >
-                              {align === 'left' ? <AlignLeft size={14} /> : align === 'center' ? <AlignCenter size={14} /> : align === 'right' ? <AlignRight size={14} /> : <AlignJustify size={14} />}
+                              {align === 'left' ? <AlignLeft size={16} /> : align === 'center' ? <AlignCenter size={16} /> : align === 'right' ? <AlignRight size={16} /> : <AlignJustify size={16} />}
                             </button>
                           ))}
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Propiedades JSON disponibles:</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Propiedades JSON disponibles</label>
                         <select
                           onChange={(e) => {
                             if (e.target.value) {
@@ -5080,7 +5079,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               updateElement(selectedElement, { content: newContent });
                             }
                           }}
-                          className="w-full px-3 py-2 border rounded text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           defaultValue=""
                         >
                           <option value="">Seleccionar propiedad...</option>
@@ -5093,10 +5092,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   )}
 
                   {element.type === 'table' && (
-                    <div className="space-y-3">
-                      <div className="mb-4">
-                        <label className="block text-xs font-medium mb-1 text-black">
-                          Ruta de datos (ej: productos.items):
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Ruta de datos (ej: productos.items)
                         </label>
                         <input
                           type="text"
@@ -5107,24 +5106,25 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               dataPath: e.target.value 
                             } 
                           })}
-                          className="w-full px-2 py-1 border rounded text-xs text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           placeholder="productos.items"
                         />
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 mt-2">
                           Ejemplo: productos.items, venta.detalles, etc.
-    </div>
+                        </div>
                         {element.config?.dataPath && (
-                          <div className="text-xs text-green-600 mt-1">
-                            ✅ Ruta configurada: {element.config.dataPath}
+                          <div className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Ruta configurada: {element.config.dataPath}
                           </div>
                         )}
                       </div>
 
-                      <div className="mb-4">
-                        <label className="block text-xs font-medium mb-1 text-black">
-                          Tamaño de fuente de tabla:
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Tamaño de fuente de tabla
                         </label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <input
                             type="range"
                             min="8"
@@ -5136,19 +5136,19 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                 fontSize: Number(e.target.value) 
                               } 
                             })}
-                            className="flex-1"
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                           />
-                          <span className="text-xs text-black w-8">
+                          <span className="text-sm text-gray-700 w-12 text-center font-medium">
                             {element.config?.fontSize || 12}px
                           </span>
                         </div>
                       </div>
 
-                      <div className="mb-4">
-                        <label className="block text-xs font-medium mb-1 text-black">
-                          Mostrar bordes:
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Mostrar bordes
                         </label>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           <label className="flex items-center">
                             <input
                               type="radio"
@@ -5160,9 +5160,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                   showBorders: true 
                                 } 
                               })}
-                              className="mr-2"
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                             />
-                            <span className="text-xs text-black">Sí</span>
+                            <span className="text-sm text-gray-700">Sí</span>
                           </label>
                           <label className="flex items-center">
                             <input
@@ -5175,18 +5175,18 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                   showBorders: false 
                                 } 
                               })}
-                              className="mr-2"
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                             />
-                            <span className="text-xs text-black">No</span>
+                            <span className="text-sm text-gray-700">No</span>
                           </label>
                         </div>
                       </div>
 
-                      <div className="mb-4">
-                        <label className="block text-xs font-medium mb-1 text-black">
-                          Mostrar encabezado:
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Mostrar encabezado
                         </label>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           <label className="flex items-center">
                             <input
                               type="radio"
@@ -5198,9 +5198,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                   showHeader: true 
                                 } 
                               })}
-                              className="mr-2"
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                             />
-                            <span className="text-xs text-black">Sí</span>
+                            <span className="text-sm text-gray-700">Sí</span>
                           </label>
                           <label className="flex items-center">
                             <input
@@ -5213,18 +5213,18 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                   showHeader: false 
                                 } 
                               })}
-                              className="mr-2"
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                             />
-                            <span className="text-xs text-black">No</span>
+                            <span className="text-sm text-gray-700">No</span>
                           </label>
                         </div>
                       </div>
 
-                      <div className="mb-4">
-                        <label className="block text-xs font-medium mb-1 text-black">
-                          Fondo del encabezado:
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Fondo del encabezado
                         </label>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           <label className="flex items-center">
                             <input
                               type="radio"
@@ -5236,9 +5236,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                   showHeaderBackground: true 
                                 } 
                               })}
-                              className="mr-2"
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                             />
-                            <span className="text-xs text-black">Con fondo gris</span>
+                            <span className="text-sm text-gray-700">Con fondo gris</span>
                           </label>
                           <label className="flex items-center">
                             <input
@@ -5251,39 +5251,43 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                   showHeaderBackground: false 
                                 } 
                               })}
-                              className="mr-2"
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                             />
-                            <span className="text-xs text-black">Sin fondo</span>
+                            <span className="text-sm text-gray-700">Sin fondo</span>
                           </label>
                         </div>
                       </div>
 
-                      <div className="mb-4">
-                        <label className="block text-xs font-medium mb-1 text-black">
-                          Columnas:
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Columnas
                         </label>
-                        <div className="text-xs text-blue-600 mb-2 p-2 bg-blue-50 border border-blue-200 rounded flex items-center gap-2">
-                          <Info size={14} />
+                        <div className="text-sm text-blue-600 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+                          <Info size={16} />
                           <strong>Consejo:</strong> Puedes reordenar las columnas arrastrándolas o usando los botones ↑↓
                         </div>
                         {element.config?.columns?.length > 0 && (
-                          <div className="text-xs text-green-600 mb-2">
-                            ✅ {element.config.columns.length} columna(s) configurada(s)
+                          <div className="text-sm text-green-600 mb-3 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            {element.config.columns.length} columna(s) configurada(s)
                           </div>
                         )}
                         
                         {/* Información de depuración */}
                         {element.config?.dataPath && element.config?.columns?.length > 0 && (
-                          <div className="text-xs text-blue-600 mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                            <div><strong>Ruta de datos:</strong> {element.config.dataPath}</div>
-                            <div><strong>Columnas:</strong></div>
-                            <ul className="ml-2 mt-1">
+                          <div className="text-sm text-blue-600 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="font-medium mb-1">Ruta de datos: {element.config.dataPath}</div>
+                            <div className="font-medium mb-1">Columnas:</div>
+                            <ul className="ml-3 mt-1 space-y-1">
                               {element.config.columns.map((col: TableColumn, index: number) => (
-                                <li key={index}>• {col.header} → {col.property}</li>
+                                <li key={index} className="flex items-center gap-1">
+                                  <span className="w-1 h-1 bg-blue-500 rounded-full"></span>
+                                  {col.header} → {col.property}
+                                </li>
                               ))}
                             </ul>
-                            <div className="mt-1 text-gray-600 flex items-center gap-1">
-                              <Info size={12} />
+                            <div className="mt-2 text-gray-600 flex items-center gap-2">
+                              <Info size={14} />
                               Revisa la consola para ver los datos cargados
                             </div>
                           </div>
@@ -5291,7 +5295,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         {(element.config?.columns || []).map((column: TableColumn, index: number) => (
                           <div 
                             key={index} 
-                            className={`space-y-2 mb-3 p-2 border rounded transition-all duration-200 ${
+                            className={`space-y-3 mb-4 p-4 border rounded-lg transition-all duration-200 ${
                               draggedColumnIndex === index 
                                 ? 'border-blue-500 bg-blue-50 shadow-lg opacity-50' 
                                 : isDraggingColumn && draggedColumnIndex !== index
@@ -5305,9 +5309,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                             onDragEnd={handleColumnDragEnd}
                           >
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <GripVertical size={14} className="text-gray-400 cursor-move mr-1" />
-                                <span className="text-xs font-medium text-gray-700">Columna {index + 1}</span>
+                              <div className="flex items-center gap-2">
+                                <GripVertical size={16} className="text-gray-400 cursor-move" />
+                                <span className="text-sm font-medium text-gray-700">Columna {index + 1}</span>
                                 <div className="flex gap-1">
                                   <button
                                     onClick={() => {
@@ -5325,14 +5329,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                       }
                                     }}
                                     disabled={index === 0}
-                                    className={`px-1 py-0.5 rounded text-xs transition-colors flex items-center justify-center ${
+                                    className={`px-2 py-1 rounded-lg text-sm transition-all duration-200 flex items-center justify-center ${
                                       index === 0 
                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                                        : 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm'
                                     }`}
                                     title="Mover hacia arriba"
                                   >
-                                    <ArrowUp size={12} />
+                                    <ArrowUp size={14} />
                                   </button>
                                   <button
                                     onClick={() => {
@@ -5350,14 +5354,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                       }
                                     }}
                                     disabled={index === (element.config?.columns || []).length - 1}
-                                    className={`px-1 py-0.5 rounded text-xs transition-colors flex items-center justify-center ${
+                                    className={`px-2 py-1 rounded-lg text-sm transition-all duration-200 flex items-center justify-center ${
                                       index === (element.config?.columns || []).length - 1 
                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                                        : 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm'
                                     }`}
                                     title="Mover hacia abajo"
                                   >
-                                    <ArrowDown size={12} />
+                                    <ArrowDown size={14} />
                                   </button>
                                 </div>
                               </div>
@@ -5371,13 +5375,13 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                     } 
                                   });
                                 }}
-                                className="px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 text-xs flex items-center justify-center"
+                                className="px-2 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm flex items-center justify-center transition-all duration-200 shadow-sm"
                                 title="Eliminar columna"
                               >
-                                <X size={12} />
+                                <X size={14} />
                               </button>
                             </div>
-                            <div className="space-y-1">
+                                                        <div className="space-y-2">
                               <input
                                 type="text"
                                 value={column.header}
@@ -5391,7 +5395,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                     } 
                                   });
                                 }}
-                                className="w-full px-2 py-1 border rounded text-xs text-black"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                                 placeholder="Encabezado de la columna"
                               />
                               <input
@@ -5407,10 +5411,10 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                     } 
                                   });
                                 }}
-                                className="w-full px-2 py-1 border rounded text-xs text-black"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                                 placeholder="Propiedad del JSON (ej: nombre)"
                               />
-    </div>
+                            </div>
                             
                             {/* Configuraciones adicionales de la columna */}
                             <div className="pt-2 border-t border-gray-200">
@@ -5801,7 +5805,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               } 
                             });
                           }}
-                          className="w-full px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                          className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium transition-all duration-200 shadow-sm"
                         >
                           + Agregar Columna
                         </button>
@@ -5810,21 +5814,21 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   )}
 
                   {element.type === 'qr' && (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Contenido del QR:</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Contenido del QR</label>
                         <textarea
                           value={element.content}
                           onChange={(e) => updateElement(selectedElement, { content: e.target.value })}
-                          className="w-full px-3 py-2 border rounded text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           rows={3}
                           placeholder="URL, texto, o datos para el código QR..."
                         />
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Tamaño del QR:</label>
-                        <div className="flex items-center gap-2">
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Tamaño del QR</label>
+                        <div className="flex items-center gap-3">
                           <input
                             type="range"
                             min="50"
@@ -5834,16 +5838,16 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               width: Number(e.target.value),
                               height: Number(e.target.value) // Mantener cuadrado
                             })}
-                            className="flex-1"
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                           />
-                          <span className="text-sm text-black w-12">
+                          <span className="text-sm text-gray-700 w-12 text-center font-medium">
                             {element.width}px
                           </span>
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Propiedades JSON disponibles:</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Propiedades JSON disponibles</label>
                         <select
                           onChange={(e) => {
                             if (e.target.value) {
@@ -5852,7 +5856,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               updateElement(selectedElement, { content: newContent });
                             }
                           }}
-                          className="w-full px-3 py-2 border rounded text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           defaultValue=""
                         >
                           <option value="">Seleccionar propiedad...</option>
@@ -5862,9 +5866,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         </select>
                       </div>
 
-                      <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                      <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 11h6v6H3v-6zm2 2v2h2v-2H5zm8 2h6v6h-6v-6zm2 2v2h2v-2h-2z"/>
                           </svg>
                           <span className="text-sm font-medium text-purple-800">Información del QR</span>
@@ -5880,17 +5884,18 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                   )}
 
                   {element.type === 'image' && (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Seleccionar imagen:</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Seleccionar imagen</label>
                         <input
                           type="file"
                           accept="image/*"
                           onChange={(e) => handleImageUpload(e, selectedElement)}
-                          className="w-full px-3 py-2 border rounded text-black text-sm"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         />
                         {element.config?.originalName && (
-                          <div className="mt-2 text-xs text-gray-600">
+                          <div className="mt-2 text-sm text-gray-600 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                             Archivo: {element.config.originalName}
                           </div>
                         )}
@@ -5899,8 +5904,8 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                       {element.config?.base64Data && (
                         <>
                           <div>
-                            <label className="block text-sm font-medium mb-2 text-black">Vista previa:</label>
-                            <div className="border rounded p-2 bg-gray-50">
+                            <label className="block text-sm font-medium mb-2 text-gray-700">Vista previa</label>
+                            <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
                               <img
                                 src={element.config.base64Data}
                                 alt="Vista previa"
@@ -5910,26 +5915,26 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-medium mb-2 text-black">Tamaño:</label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <label className="block text-sm font-medium mb-2 text-gray-700">Tamaño</label>
+                            <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-xs text-gray-600 mb-1">Ancho:</label>
+                                <label className="block text-xs text-gray-500 mb-1">Ancho</label>
                                 <input
                                   type="number"
                                   value={element.width}
                                   onChange={(e) => updateElement(selectedElement, { width: Number(e.target.value) })}
-                                  className="w-full px-2 py-1 border rounded text-xs text-black"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                                   min="10"
                                   max="500"
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-gray-600 mb-1">Alto:</label>
+                                <label className="block text-xs text-gray-500 mb-1">Alto</label>
                                 <input
                                   type="number"
                                   value={element.height}
                                   onChange={(e) => updateElement(selectedElement, { height: Number(e.target.value) })}
-                                  className="w-full px-2 py-1 border rounded text-xs text-black"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                                   min="10"
                                   max="500"
                                 />
@@ -5938,7 +5943,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-medium mb-2 text-black">Ajuste de imagen:</label>
+                            <label className="block text-sm font-medium mb-2 text-gray-700">Ajuste de imagen</label>
                             <select
                               value={element.config?.objectFit || 'contain'}
                               onChange={(e) => updateElement(selectedElement, {
@@ -5947,7 +5952,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                   objectFit: e.target.value as 'contain' | 'cover' | 'fill' | 'none' | 'scale-down'
                                 }
                               })}
-                              className="w-full px-3 py-2 border rounded text-black"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                             >
                               <option value="contain">Contener (mantener proporción)</option>
                               <option value="cover">Cubrir (cortar si es necesario)</option>
@@ -5958,7 +5963,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           </div>
                           
                           <div>
-                            <label className="flex items-center gap-2 text-sm font-medium mb-2 text-black">
+                            <label className="flex items-center gap-3 text-sm font-medium mb-2 text-gray-700">
                               <input
                                 type="checkbox"
                                 checked={element.config?.maintainAspectRatio !== false}
@@ -5968,7 +5973,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                                     maintainAspectRatio: e.target.checked
                                   }
                                 })}
-                                className="rounded"
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                               />
                               Mantener proporción al redimensionar
                             </label>
@@ -5976,25 +5981,37 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                         </>
                       )}
 
-                      <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Image size={16} className="text-orange-600" />
+                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Image size={18} className="text-orange-600" />
                           <span className="text-sm font-medium text-orange-800">Información de la imagen</span>
                         </div>
-                        <div className="text-xs text-orange-700 space-y-1">
-                          <div>• La imagen se convierte a base64 automáticamente</div>
-                          <div>• No requiere archivos externos</div>
-                          <div>• Formatos soportados: JPG, PNG, GIF, WebP</div>
-                          <div>• Tamaño recomendado: 150-300px</div>
+                        <div className="text-sm text-orange-700 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
+                            La imagen se convierte a base64 automáticamente
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
+                            No requiere archivos externos
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
+                            Formatos soportados: JPG, PNG, GIF, WebP
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
+                            Tamaño recomendado: 150-300px
+                          </div>
                         </div>
                       </div>
                     </div>
                   )}
 
                   {element.type === 'formula' && (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Código JavaScript:</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Código JavaScript</label>
                         <CodeMirrorEditor
                           value={element.config?.javascriptCode || ''}
                           onChange={(value) => updateElement(selectedElement, { 
@@ -6008,7 +6025,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Formato de salida:</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Formato de salida</label>
                         <select
                           value={element.config?.outputFormat || 'text'}
                           onChange={(e) => updateElement(selectedElement, { 
@@ -6017,7 +6034,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               outputFormat: e.target.value as 'text' | 'number' | 'boolean' | 'json'
                             } 
                           })}
-                          className="w-full px-3 py-2 border rounded text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         >
                           <option value="text">Texto</option>
                           <option value="number">Número</option>
@@ -6027,7 +6044,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Manejo de errores:</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Manejo de errores</label>
                         <select
                           value={element.config?.errorHandling || 'show-default'}
                           onChange={(e) => updateElement(selectedElement, { 
@@ -6036,7 +6053,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               errorHandling: e.target.value as 'show-error' | 'hide-error' | 'show-default'
                             } 
                           })}
-                          className="w-full px-3 py-2 border rounded text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         >
                           <option value="show-error">Mostrar error</option>
                           <option value="hide-error">Ocultar error</option>
@@ -6045,7 +6062,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Valor por defecto:</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Valor por defecto</label>
                         <input
                           type="text"
                           value={element.config?.defaultValue || ''}
@@ -6055,13 +6072,13 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               defaultValue: e.target.value 
                             } 
                           })}
-                          className="w-full px-3 py-2 border rounded text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           placeholder="Valor a mostrar si hay error"
                         />
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Timeout (ms):</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Timeout (ms)</label>
                         <input
                           type="number"
                           value={element.config?.timeout || 5000}
@@ -6071,7 +6088,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                               timeout: Number(e.target.value) 
                             } 
                           })}
-                          className="w-full px-3 py-2 border rounded text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                           min="1000"
                           max="30000"
                           step="1000"
@@ -6079,45 +6096,45 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Tamaño de fuente:</label>
-                        <div className="flex items-center gap-2">
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Tamaño de fuente</label>
+                        <div className="flex items-center gap-3">
                           <input
                             type="range"
                             min="8"
                             max="32"
                             value={element.fontSize || 14}
                             onChange={(e) => updateElementFontSize(selectedElement, Number(e.target.value))}
-                            className="flex-1"
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                           />
-                          <span className="text-sm text-black w-8">
+                          <span className="text-sm text-gray-700 w-12 text-center font-medium">
                             {element.fontSize || 14}px
                           </span>
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-black">Alineación:</label>
-                        <div className="flex gap-1">
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Alineación</label>
+                        <div className="flex gap-2">
                           {(['left', 'center', 'right', 'justify'] as const).map((align) => (
                             <button
                               key={align}
                               onClick={() => updateElementTextAlign(selectedElement, align)}
-                              className={`flex-1 px-2 py-1 text-xs rounded border transition-colors flex items-center justify-center ${
+                              className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
                                 element.textAlign === align 
-                                  ? 'bg-blue-500 text-white border-blue-500' 
-                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                  ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                               }`}
                               title={`Alinear ${align === 'left' ? 'izquierda' : align === 'center' ? 'centro' : align === 'right' ? 'derecha' : 'justificar'}`}
                             >
-                              {align === 'left' ? <AlignLeft size={14} /> : align === 'center' ? <AlignCenter size={14} /> : align === 'right' ? <AlignRight size={14} /> : <AlignJustify size={14} />}
+                              {align === 'left' ? <AlignLeft size={16} /> : align === 'center' ? <AlignCenter size={16} /> : align === 'right' ? <AlignRight size={16} /> : <AlignJustify size={16} />}
                             </button>
                           ))}
                         </div>
                       </div>
 
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Code size={16} className="text-red-600" />
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Code size={18} className="text-red-600" />
                           <span className="text-sm font-medium text-red-800">Información de la fórmula</span>
                         </div>
                         <div className="text-xs text-red-700 space-y-1">
