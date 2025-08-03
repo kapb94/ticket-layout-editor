@@ -5986,23 +5986,9 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                           <Image size={18} className="text-orange-600" />
                           <span className="text-sm font-medium text-orange-800">Información de la imagen</span>
                         </div>
-                        <div className="text-sm text-orange-700 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
-                            La imagen se convierte a base64 automáticamente
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
-                            No requiere archivos externos
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
-                            Formatos soportados: JPG, PNG, GIF, WebP
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
-                            Tamaño recomendado: 150-300px
-                          </div>
+                        <div className="text-xs text-orange-700 space-y-1">
+                          <div>• Formatos soportados: JPG, PNG, GIF, WebP</div>
+                          <div>• Tamaño recomendado: 150-300px</div>
                         </div>
                       </div>
                     </div>
