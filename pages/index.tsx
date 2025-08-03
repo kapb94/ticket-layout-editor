@@ -1,4 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { crosshairCursor,EditorView, highlightActiveLine, highlightActiveLineGutter, lineNumbers, rectangularSelection, drawSelection, dropCursor, highlightSpecialChars } from '@codemirror/view';
+import { EditorState } from '@codemirror/state';
+import { javascript } from '@codemirror/lang-javascript';
+import { oneDark } from '@codemirror/theme-one-dark';
+
 import Head from 'next/head';
 import { 
   Eye, 
@@ -58,6 +63,8 @@ import {
   Layers,
   Image
 } from 'lucide-react';
+import { bracketMatching, defaultHighlightStyle, foldGutter, indentOnInput, syntaxHighlighting } from '@codemirror/language';
+import { autocompletion, closeBrackets } from '@codemirror/autocomplete';
 
 interface TicketElement {
   id: string;
@@ -140,6 +147,144 @@ interface ProjectConfig {
   elements: TicketElement[];
   jsonData?: any;
 }
+
+// 🔁 Función que navega por el objeto externo
+const getSuggestions = (path:any,jsonData:any) => {
+  const parts = path.split(".");
+  let obj = { data: jsonData };
+  for (let part of parts) {
+    if (obj && typeof obj === "object") {
+      obj = obj[part];
+    } else {
+      return [];
+    }
+  }
+  if (!obj || typeof obj !== "object") return [];
+
+  return Object.keys(obj).map((key) => ({
+    label: key,
+    type: "property",
+    info: path + "." + key
+  }));
+};
+
+// 🎯 Función de autocompletado
+const customAutocomplete = (context:any,jsonData:any) => {
+  const word = context.matchBefore(/[\w\.]+/);
+  if (!word || word.from == word.to) return null;
+
+  const text = word.text;
+  if (text.startsWith("data")) {
+    const options = getSuggestions(text,jsonData);
+    return {
+      from: word.from,
+      options
+    };
+  }
+
+  return null;
+};
+// Componente para el editor de CodeMirror
+const CodeMirrorEditor = ({ value, onChange, placeholder }: { 
+  value: string; 
+  onChange: (value: string) => void; 
+  placeholder?: string;
+}) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const editorViewRef = useRef<EditorView | null>(null);
+
+  useEffect(() => {
+    if (editorRef.current && !editorViewRef.current) {
+      const state = EditorState.create({
+        doc: value || '',
+        extensions: [
+           // A line number gutter
+          lineNumbers(),
+          // A gutter with code folding markers
+          foldGutter(),
+          // Replace non-printable characters with placeholders
+          highlightSpecialChars(),
+         
+          // Replace native cursor/selection with our own
+          drawSelection(),
+          // Show a drop cursor when dragging over the editor
+          dropCursor(),
+          // Allow multiple cursors/selections
+          EditorState.allowMultipleSelections.of(true),
+          // Re-indent lines when typing specific input
+          indentOnInput(),
+          // Highlight syntax with a default style
+          syntaxHighlighting(defaultHighlightStyle),
+          // Highlight matching brackets near cursor
+          bracketMatching(),
+          // Automatically close brackets
+          closeBrackets(),
+          // Load the autocompletion system
+          autocompletion(),
+          // Allow alt-drag to select rectangular regions
+          rectangularSelection(),
+          // Change the cursor to a crosshair when holding alt
+          crosshairCursor(),
+          // Style the current line specially
+          highlightActiveLine(),
+          // Style the gutter for current line specially
+          highlightActiveLineGutter(),
+          // Highlight text that matches the selected text
+          javascript(),
+          EditorView.theme({
+            ".cm-content, .cm-gutter": {minHeight: "200px",color: "black"}
+          }),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              const content = update.state.doc.toString();
+              onChange(content);
+            }
+          }),
+          
+          
+        ]
+      });
+
+      const view = new EditorView({
+        state,
+        parent: editorRef.current
+      });
+
+      editorViewRef.current = view;
+    }
+
+    return () => {
+      if (editorViewRef.current) {
+        editorViewRef.current.destroy();
+        editorViewRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (editorViewRef.current && value !== editorViewRef.current.state.doc.toString()) {
+      const transaction = editorViewRef.current.state.update({
+        changes: {
+          from: 0,
+          to: editorViewRef.current.state.doc.length,
+          insert: value
+        }
+      });
+      editorViewRef.current.dispatch(transaction);
+    }
+  }, [value]);
+
+  return (
+    <div className="w-full">
+      <div ref={editorRef} className="w-full" />
+      <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+        <span>💡 Tip: Usa <code className="bg-gray-100 px-1 rounded">data</code> para acceder a los datos JSON</span>
+        <span>•</span>
+        <span>Ctrl+Enter para ejecutar</span>
+      </div>
+    </div>
+  );
+};
 
 export default function TicketEditor() {
   const [ticketWidth, setTicketWidth] = useState(300);
@@ -3799,6 +3944,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
     <div className="min-h-screen bg-gray-100">
       <Head>
         <title>Editor de Tickets</title>
+
       </Head>
 
       {/* Modales de inicio y gestión de proyectos */}
@@ -5849,16 +5995,14 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium mb-2 text-black">Código JavaScript:</label>
-                        <textarea
+                        <CodeMirrorEditor
                           value={element.config?.javascriptCode || ''}
-                          onChange={(e) => updateElement(selectedElement, { 
+                          onChange={(value) => updateElement(selectedElement, { 
                             config: { 
                               ...element.config, 
-                              javascriptCode: e.target.value 
+                              javascriptCode: value 
                             } 
                           })}
-                          className="w-full px-3 py-2 border rounded text-black font-mono text-xs"
-                          rows={8}
                           placeholder="// Ejemplo:&#10;const total = data.venta.items.reduce((sum, item) => sum + item.precio, 0);&#10;return total.toFixed(2);"
                         />
                       </div>
