@@ -154,7 +154,7 @@ const getSuggestions = (path:any,jsonData:any) => {
   let obj = { data: jsonData };
   for (let part of parts) {
     if (obj && typeof obj === "object") {
-      obj = obj[part];
+      obj = obj[part as keyof typeof obj];
     } else {
       return [];
     }
