@@ -1029,7 +1029,7 @@ export default function TicketEditor() {
           return String(value);
         }
         
-        return match; // Si no se encuentra, mantener el texto original
+        return ''; // Si no se encuentra, retornar cadena vacía
       } catch (error) {
         console.error('Error procesando referencia JSON:', path, error);
         return match; // Si hay error, mantener el texto original
@@ -2446,7 +2446,7 @@ export default function TicketEditor() {
                         return String(value);
                     }
                     
-                    return match; // Si no se encuentra, mantener el texto original
+                    return ''; // Si no se encuentra, retornar cadena vacía
                 } catch (error) {
                     console.error('Error al reemplazar placeholder:', path, error);
                     return match;
