@@ -3739,6 +3739,12 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
             onDeleteElement={deleteElement}
             convertWidth={convertWidth}
             generateJsonPaths={generateJsonPaths}
+            draggedColumnIndex={draggedColumnIndex}
+            isDraggingColumn={isDraggingColumn}
+            handleColumnDragStart={handleColumnDragStart}
+            handleColumnDragOver={handleColumnDragOver}
+            handleColumnDrop={handleColumnDrop}
+            handleColumnDragEnd={handleColumnDragEnd}
           />
         )}
 

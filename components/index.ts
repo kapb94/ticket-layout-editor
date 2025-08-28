@@ -8,6 +8,6 @@ export { default as Sidebar } from './Sidebar';
 export { default as JsonViewer } from './JsonViewer';
 export { default as PreviewPanel } from './PreviewPanel';
 export { default as Canvas } from './Canvas';
-export { default as PropertiesPanel } from './PropertiesPanel';
+export { default as PropertiesPanel } from './PropertiesPanel/PropertiesPanel';
 export { default as ElementRenderer } from './ElementRenderer';
 export * from './types';
