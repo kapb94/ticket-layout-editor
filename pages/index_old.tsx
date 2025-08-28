@@ -61,12 +61,10 @@ import {
   PanelLeftOpen,
   Ruler,
   Layers,
-  Image,
-  Sidebar
+  Image
 } from 'lucide-react';
 import { bracketMatching, defaultHighlightStyle, foldGutter, indentOnInput, syntaxHighlighting } from '@codemirror/language';
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete';
-import { Canvas, Header, ImportSuccessModal, JsonViewer, PreviewPanel, PropertiesPanel, Toolbar } from '@/components';
 
 interface TicketElement {
   id: string;
@@ -4043,14 +4041,53 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
       {/* Modal de confirmación de importación exitosa */}
       {showImportSuccessModal && importedProjectInfo && (
-        <ImportSuccessModal
-          onClose={() => setShowImportSuccessModal(false)}
-          name={importedProjectInfo.name}
-          version={importedProjectInfo.version}
-          elements={importedProjectInfo.elements}
-          createdAt={importedProjectInfo.createdAt}
-          updatedAt={importedProjectInfo.updatedAt}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check size={32} className="text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Proyecto Cargado!</h2>
+              <p className="text-gray-600">El proyecto se ha importado correctamente</p>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Nombre:</span>
+                  <span className="text-sm text-gray-900 font-semibold">{importedProjectInfo.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Versión:</span>
+                  <span className="text-sm text-gray-900">{importedProjectInfo.version}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Elementos:</span>
+                  <span className="text-sm text-gray-900 font-semibold">{importedProjectInfo.elements}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Creado:</span>
+                  <span className="text-sm text-gray-900">{new Date(importedProjectInfo.createdAt).toLocaleString()}</span>
+                </div>
+                {importedProjectInfo.updatedAt && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Actualizado:</span>
+                    <span className="text-sm text-gray-900">{new Date(importedProjectInfo.updatedAt).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowImportSuccessModal(false)}
+                className="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                ¡Perfecto!
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Inputs ocultos para archivos */}
@@ -4069,52 +4106,633 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         className="hidden"
       />
 
-     <Toolbar
-      sidebarHidden={sidebarHidden}
-      showPreview={showPreview}
-      showJsonViewer={showJsonViewer}
-      showDebug={showDebug}
-      showSizeMenu={showSizeMenu}
-      showElementsMenu={showElementsMenu}
-      showInfoMenu={showInfoMenu}
-      onToggleSidebar={() => setSidebarHidden(!sidebarHidden)}
-      onTogglePreview={() => setShowPreview(!showPreview)}
-      onToggleJsonViewer={() => setShowJsonViewer(!showJsonViewer)}
-      onToggleDebug={() => setShowDebug(!showDebug)}
-      onToggleSizeMenu={toggleSizeMenu}
-      onToggleElementsMenu={toggleElementsMenu}
-      onToggleInfoMenu={toggleInfoMenu}
-      onGenerateHTML={generateHTML}
-      onClearCanvas={clearCanvas}
-      onGenerateExample={generateExampleUsage}
-      onExportProject={exportProjectConfig}
-      onImportProject={importProjectConfig}
-      onChangeProjectName={handleNewProject}
-      onDragStart={handleDragStart}
-      ticketWidth={ticketWidth}
-      widthUnit={widthUnit}
-      onTicketWidthChange={handleTicketWidthChange}
-      onWidthUnitChange={handleWidthUnitChange}
-      convertWidth={convertWidth}
-     />
+      {/* Toolbar flotante superior */}
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white shadow-lg rounded-lg border border-gray-200 p-3">
+        <div className="flex items-center space-x-2">
+          {/* Botón para ocultar/mostrar sidebar */}
+          <button
+            onClick={() => setSidebarHidden(!sidebarHidden)}
+            className={`p-2 rounded text-lg transition-colors relative group ${
+              sidebarHidden 
+                ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+          >
+            {sidebarHidden ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {sidebarHidden ? 'Mostrar Sidebar' : 'Ocultar Sidebar'}
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className={`p-2 rounded text-lg transition-colors relative group ${
+              showPreview 
+                ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+          >
+            <Eye size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {showPreview ? 'Ocultar Vista Previa' : 'Mostrar Vista Previa'}
+            </div>
+          </button>
+          <button
+            onClick={() => setShowJsonViewer(!showJsonViewer)}
+            className={`p-2 rounded text-lg relative group transition-colors flex items-center justify-center ${
+              showJsonViewer 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+          >
+            <Braces size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {showJsonViewer ? 'Ocultar JSON' : 'Mostrar JSON'}
+            </div>
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const html = await generateHTML();
+                const safeProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                const filename = `${safeProjectName}-template.html`;
+                triggerFileDownload(html, filename, 'text/html');
+              } catch (error) {
+                console.error('Error generating HTML:', error);
+                alert('Error al generar el HTML. Inténtalo de nuevo.');
+              }
+            }}
+            className="p-2 bg-green-600 text-white rounded hover:bg-green-700 text-lg relative group"
+          >
+            <Save size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Generar Plantilla HTML
+            </div>
+          </button>
+          
+          <button
+            onClick={clearCanvas}
+            className="p-2 bg-red-600 text-white rounded hover:bg-red-700 text-lg relative group"
+          >
+            <Trash2 size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Limpiar Todo
+            </div>
+          </button>
+          
+          <button
+            onClick={generateExampleUsage}
+            className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-lg relative group"
+          >
+            <BookOpen size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Ejemplo de uso
+            </div>
+          </button>
+          
+          {/* Exportar/Importar Configuración */}
+          <button
+            onClick={exportProjectConfig}
+            className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-lg relative group"
+          >
+            <Download size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Exportar Proyecto
+            </div>
+          </button>
+          
+          <div className="relative group">
+            <input
+              type="file"
+              accept=".json"
+              onChange={importProjectConfig}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <button
+              className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-lg flex items-center justify-center"
+            >
+              <FolderOpen size={20} />
+            </button>
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Importar Proyecto
+            </div>
+          </div>
+          
+          <button
+            onClick={() => setShowProjectNameModal(true)}
+            className="p-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-lg relative group"
+          >
+            <Type size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Cambiar Nombre del Proyecto
+            </div>
+          </button>
+          
+          
+          {/* Opciones adicionales cuando la sidebar está oculta */}
+          {sidebarHidden && (
+            <>
+              {/* Opción 1: Cambiar tamaño de página */}
+              <div className="relative group toolbar-submenu">
+                <button
+                  onClick={toggleSizeMenu}
+                  className="p-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-lg relative group"
+                >
+                  <Ruler size={20} />
+                  <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded transition-opacity whitespace-nowrap pointer-events-none ${showSizeMenu ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
+                    Cambiar Tamaño de Página
+                  </div>
+                </button>
+                
+                {/* Submenú de tamaños */}
+                {showSizeMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px] toolbar-submenu">
+                    <div className="text-xs font-semibold text-gray-700 mb-2">Ancho del ticket:</div>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        type="number"
+                        value={ticketWidth}
+                        onChange={(e) => setTicketWidth(Number(e.target.value))}
+                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                        min="50"
+                        max="1000"
+                      />
+                      <select
+                        value={widthUnit}
+                        onChange={(e) => handleUnitChange(e.target.value as 'px' | 'in' | 'cm')}
+                        className="px-2 py-1 border border-gray-300 rounded text-xs"
+                      >
+                        <option value="px">px</option>
+                        <option value="in">pulgadas</option>
+                        <option value="cm">cm</option>
+                      </select>
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Ancho actual: <span className="font-medium">{convertWidth(ticketWidth, widthUnit).toFixed(0)}px</span>
+                    </div>
+                    <button
+                      onClick={() => setShowSizeMenu(false)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Opción 2: Lista de elementos */}
+              <div className="relative group toolbar-submenu">
+                <button
+                  onClick={toggleElementsMenu}
+                  className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-lg relative group"
+                >
+                  <Layers size={20} />
+                  <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded transition-opacity whitespace-nowrap pointer-events-none ${showElementsMenu ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
+                    Elementos Disponibles
+                  </div>
+                </button>
+                
+                {/* Submenú de elementos */}
+                {showElementsMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[250px] toolbar-submenu">
+                    <div className="text-xs font-semibold text-gray-700 mb-2">Arrastra elementos al área de diseño:</div>
+                    <div className="space-y-2">
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'text')}
+                        className="p-2 bg-blue-50 border border-blue-200 rounded cursor-move hover:bg-blue-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center">
+                          <FileText size={12} className="text-blue-600" />
+                        </div>
+                        <span className="font-medium">Etiqueta de texto</span>
+                      </div>
+                      
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'table')}
+                        className="p-2 bg-green-50 border border-green-200 rounded cursor-move hover:bg-green-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-green-100 rounded flex items-center justify-center">
+                          <Table size={12} className="text-green-600" />
+                        </div>
+                        <span className="font-medium">Tabla</span>
+                      </div>
+                      
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'qr')}
+                        className="p-2 bg-purple-50 border border-purple-200 rounded cursor-move hover:bg-purple-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-purple-100 rounded flex items-center justify-center">
+                          <svg className="w-3 h-3 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 11h6v6H3v-6zm2 2v2h2v-2H5zm8 2h6v6h-6v-6zm2 2v2h2v-2h-2z"/>
+                          </svg>
+                        </div>
+                        <span className="font-medium">Código QR</span>
+                      </div>
+                      
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'image')}
+                        className="p-2 bg-orange-50 border border-orange-200 rounded cursor-move hover:bg-orange-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
+                          <Image size={12} className="text-orange-600" />
+                        </div>
+                        <span className="font-medium">Imagen</span>
+                      </div>
+                      
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'formula')}
+                        className="p-2 bg-red-50 border border-red-200 rounded cursor-move hover:bg-red-100 transition-colors text-black text-xs flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 bg-red-100 rounded flex items-center justify-center">
+                          <Code size={12} className="text-red-600" />
+                        </div>
+                        <span className="font-medium">Fórmula JavaScript</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowElementsMenu(false)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Opción 3: Información */}
+              <div className="relative group toolbar-submenu">
+                <button
+                  onClick={toggleInfoMenu}
+                  className="p-2 bg-amber-600 text-white rounded hover:bg-amber-700 text-lg relative group"
+                >
+                  <Info size={20} />
+                  <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded transition-opacity whitespace-nowrap pointer-events-none ${showInfoMenu ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
+                    Información
+                  </div>
+                </button>
+                
+                {/* Submenú de información */}
+                {showInfoMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[300px] max-w-[400px] toolbar-submenu">
+                    <div className="text-xs font-semibold text-gray-700 mb-2">Instrucciones:</div>
+                    <div className="space-y-1 text-xs text-gray-600">
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Arrastra elementos al área de diseño</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Haz clic para seleccionar elementos</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Arrastra para mover elementos</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Usa las esquinas para redimensionar</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>Haz clic en tablas para configurar</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 pt-2 border-t border-gray-200">
+                      <div className="text-xs font-semibold text-gray-700 mb-1">Atajos de Teclado:</div>
+                      <div className="space-y-1 text-xs text-gray-600">
+                        <div className="flex justify-between">
+                          <span>Mover elemento:</span>
+                          <span className="font-mono bg-gray-100 px-1 rounded">Flechas</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Redimensionar:</span>
+                          <span className="font-mono bg-gray-100 px-1 rounded">Shift + Flechas</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Zoom:</span>
+                          <span className="font-mono bg-gray-100 px-1 rounded">Shift + Scroll</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => setShowInfoMenu(false)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className={`p-2 rounded text-lg relative group transition-colors flex items-center justify-center ${
+              showDebug 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+          >
+            <Bug size={20} />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {showDebug ? 'Ocultar Debugging' : 'Mostrar Debugging'}
+            </div>
+          </button>
+          
+          
+        </div>
+      </div>
 
+      {/* Barra superior con nombre del proyecto */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <FileText size={20} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">{projectName}</h1>
+              <p className="text-sm text-gray-500">Editor de Tickets</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Elementos: {elements.length}</span>
+            <span className="text-sm text-gray-500">•</span>
+            <span className="text-sm text-gray-500">Ancho: {ticketWidth}{widthUnit}</span>
+          </div>
+        </div>
+      </div>
 
-     <Header
-      projectName={projectName}
-      elementsCount={elements.length}
-      ticketWidth={ticketWidth}
-      widthUnit={widthUnit}
-     />
       <div className="flex" style={{ height: 'calc(100vh - 80px)' }}>
         {/* Barra lateral de herramientas */}
         {!sidebarHidden && (
-         <Sidebar
-          elements={elements}
-          ticketWidth={ticketWidth}
-          widthUnit={widthUnit}
-          calculateContentHeight={calculateContentHeight}
-          updateElement={updateElement}
-         />
+          <div 
+            className="bg-gradient-to-b from-gray-50 to-white shadow-xl border-r border-gray-200 overflow-y-auto sidebar"
+            style={{ width: `${sidebarWidth}px` }}
+          >
+          {/* Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Settings2 size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Herramientas</h2>
+                <p className="text-xs text-gray-500">Configuración y elementos</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 space-y-6">
+            {/* Sección 1: Configuración del Ticket */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Settings size={16} className="text-blue-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Configuración del Ticket</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium mb-2 text-gray-700">Ancho del ticket:</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={ticketWidth}
+                      onChange={(e) => setTicketWidth(Number(e.target.value))}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      min="50"
+                      max="1000"
+                    />
+                    <select
+                      value={widthUnit}
+                      onChange={(e) => handleUnitChange(e.target.value as 'px' | 'in' | 'cm')}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="px">px</option>
+                      <option value="in">pulgadas</option>
+                      <option value="cm">cm</option>
+                    </select>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Ancho actual: <span className="font-medium">{convertWidth(ticketWidth, widthUnit).toFixed(0)}px</span>
+                    {widthUnit !== 'px' && (
+                      <span className="text-blue-600 ml-2">
+                        ({ticketWidth.toFixed(2)} {widthUnit})
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <Info size={12} />
+                    Al cambiar la unidad, el valor se convierte automáticamente
+                  </div>
+                  {isConverting && (
+                    <div className="text-xs text-green-600 mt-1 animate-pulse flex items-center gap-1">
+                      <RefreshCw size={12} className="animate-spin" />
+                      Convirtiendo elementos...
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sección 2: Datos JSON */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Database size={16} className="text-green-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Datos JSON</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleJsonUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    id="json-file-input"
+                  />
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 hover:bg-green-50 transition-all duration-200 cursor-pointer group"
+                    onDragOver={handleJsonDragOver}
+                    onDrop={handleJsonDrop}
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                        <Upload size={20} className="text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 group-hover:text-green-700 transition-colors">
+                          Seleccionar archivo JSON
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Arrastra aquí o haz clic para buscar
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {hasCustomJson && (
+                    <div className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                      <Check size={12} />
+                      Archivo JSON cargado correctamente
+                    </div>
+                  )}
+                  
+                  {currentJsonData && !hasCustomJson && (
+                    <div className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                      <Info size={12} />
+                      Usando datos de ejemplo
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sección 3: Elementos */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Plus size={16} className="text-purple-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Elementos</h3>
+              </div>
+              
+              <div className="space-y-2">
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'text')}
+                  className="p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-move hover:bg-blue-100 transition-colors text-black font-medium flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                    <FileText size={16} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Etiqueta de texto</p>
+                    <p className="text-xs text-gray-500">Texto con formato y variables</p>
+                  </div>
+                </div>
+                
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'table')}
+                  className="p-3 bg-green-50 border border-green-200 rounded-lg cursor-move hover:bg-green-100 transition-colors text-black font-medium flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                    <Table size={16} className="text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Tabla</p>
+                    <p className="text-xs text-gray-500">Datos dinámicos en formato tabla</p>
+                  </div>
+                </div>
+                
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'qr')}
+                  className="p-3 bg-purple-50 border border-purple-200 rounded-lg cursor-move hover:bg-purple-100 transition-colors text-black font-medium flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                    <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 11h6v6H3v-6zm2 2v2h2v-2H5zm8 2h6v6h-6v-6zm2 2v2h2v-2h-2z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Código QR</p>
+                    <p className="text-xs text-gray-500">Genera códigos QR dinámicos</p>
+                  </div>
+                </div>
+                
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'image')}
+                  className="p-3 bg-orange-50 border border-orange-200 rounded-lg cursor-move hover:bg-orange-100 transition-colors text-black font-medium flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                    <Image size={16} className="text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Imagen</p>
+                    <p className="text-xs text-gray-500">Imágenes convertidas a base64</p>
+                  </div>
+                </div>
+                
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'formula')}
+                  className="p-3 bg-red-50 border border-red-200 rounded-lg cursor-move hover:bg-red-100 transition-colors text-black font-medium flex items-center gap-3 group"
+                >
+                  <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                    <Code size={16} className="text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Fórmula JavaScript</p>
+                    <p className="text-xs text-gray-500">Manipula datos JSON con JavaScript</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sección 4: Atajos de Teclado */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Keyboard size={16} className="text-orange-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Atajos de Teclado</h3>
+              </div>
+              
+              <div className="space-y-2 text-xs text-gray-700">
+                <div className="flex justify-between items-center">
+                  <span>Mover elemento:</span>
+                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">Flechas</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Redimensionar:</span>
+                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">Shift + Flechas</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Zoom:</span>
+                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">Shift + Scroll</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sección 5: Información */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <HelpCircle size={16} className="text-gray-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Instrucciones</h3>
+              </div>
+              
+              <div className="space-y-2 text-xs text-gray-600">
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Arrastra elementos al área de diseño</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Haz clic para seleccionar elementos</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Arrastra para mover elementos</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Usa las esquinas para redimensionar</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span>Haz clic en tablas para configurar</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         )}
 
         {/* Handle de redimensionamiento de sidebar */}
@@ -4127,48 +4745,1720 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
         {/* Panel de propiedades */}
         {showProperties && selectedElement && (
-          <PropertiesPanel
-            element={selectedElement}
-            updateElement={updateElement}
-          />
+          <div 
+            className="bg-white shadow-lg p-6 border-l border-gray-200 overflow-y-auto max-h-screen properties-panel"
+            style={{ width: `${propertiesWidth}px` }}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-800">Propiedades</h3>
+              <button
+                onClick={() => {
+                  setShowProperties(false);
+                  setSelectedElement(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-all duration-200"
+                title="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            {(() => {
+              const element = elements.find(el => el.id === selectedElement);
+              if (!element) return null;
+              
+              return (
+                <div className="space-y-6 pb-4">
+                  {/* Posición X/Y */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Posición (píxeles)
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">X</label>
+                        <input
+                          type="number"
+                          value={element.x}
+                          onChange={(e) => updateElement(selectedElement, { x: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Y</label>
+                        <input
+                          type="number"
+                          value={element.y}
+                          onChange={(e) => updateElement(selectedElement, { y: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tamaño */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Tamaño (píxeles)
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Ancho</label>
+                        <input
+                          type="number"
+                          value={element.width}
+                          onChange={(e) => updateElement(selectedElement, { width: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          placeholder="150"
+                          max={convertWidth(ticketWidth, widthUnit) - element.x}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Alto</label>
+                        <input
+                          type="number"
+                          value={element.height}
+                          onChange={(e) => updateElement(selectedElement, { height: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          placeholder="30"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Información de límites */}
+                  {showDebug && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="text-sm text-blue-800 space-y-1">
+                        <div className="font-medium">Límites del ticket:</div>
+                        <div>Ancho máximo: {convertWidth(ticketWidth, widthUnit)}px</div>
+                        <div>Ancho disponible: {convertWidth(ticketWidth, widthUnit) - element.x}px</div>
+                        <div>Ancho actual: {element.width}px</div>
+                        {element.width >= convertWidth(ticketWidth, widthUnit) - element.x && (
+                          <div className="text-red-600 font-medium">⚠️ Elemento en ancho máximo</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Posicionamiento relativo */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Posicionamiento relativo
+                    </label>
+                    <div className="space-y-3">
+                      {/* Elemento de referencia */}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Relativo a</label>
+                        <select
+                          value={element.relativeTo || ''}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            relativeTo: e.target.value || undefined,
+                            relativePosition: e.target.value ? (element.relativePosition || 'below') : undefined
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        >
+                          <option value="">Ninguno (posición absoluta)</option>
+                          {elements.filter(el => el.id !== selectedElement).map(el => (
+                            <option key={el.id} value={el.id}>
+                              {el.type === 'text' ? `Texto: ${el.content.substring(0, 20)}...` : 
+                               el.type === 'table' ? `Tabla: ${el.config?.columns?.length || 0} columnas` :
+                               el.type === 'qr' ? `QR: ${el.content.substring(0, 20)}...` : 
+                               el.type === 'image' ? `Imagen: ${el.config?.originalName || el.content.substring(0, 20)}...` :
+                               el.type === 'formula' ? `Fórmula: ${el.config?.javascriptCode?.substring(0, 20) || 'JavaScript'}...` :
+                               `${el.type}: ${el.content.substring(0, 20)}...`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Posición relativa - Sistema nuevo */}
+                      {element.relativeTo && (
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Posición Relativa:</label>
+                          
+                          {/* Selector de modo */}
+                          <div className="mb-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => updateElement(selectedElement, { 
+                                  relativePosition: undefined,
+                                  relativeVertical: undefined,
+                                  relativeHorizontal: undefined
+                                })}
+                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                                  !element.relativePosition && !element.relativeVertical && !element.relativeHorizontal
+                                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                }`}
+                              >
+                                Manual
+                              </button>
+                              <button
+                                onClick={() => updateElement(selectedElement, { 
+                                  relativePosition: 'below',
+                                  relativeVertical: undefined,
+                                  relativeHorizontal: undefined
+                                })}
+                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                                  element.relativePosition && !element.relativeVertical && !element.relativeHorizontal
+                                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                }`}
+                              >
+                                Predefinida
+                              </button>
+                              <button
+                                onClick={() => updateElement(selectedElement, { 
+                                  relativePosition: undefined,
+                                  relativeVertical: 'bottom',
+                                  relativeHorizontal: 'left'
+                                })}
+                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                                  !element.relativePosition && (element.relativeVertical || element.relativeHorizontal)
+                                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                }`}
+                              >
+                                Personalizada
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Posiciones predefinidas */}
+                          {(element.relativePosition && !element.relativeVertical && !element.relativeHorizontal) && (
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                              {(['top-left', 'above', 'top-right', 'left', 'center', 'right', 'bottom-left', 'below', 'bottom-right'] as const).map((pos) => (
+                                <button
+                                  key={pos}
+                                  onClick={() => updateElement(selectedElement, { relativePosition: pos })}
+                                  className={`p-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
+                                    element.relativePosition === pos 
+                                      ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                  }`}
+                                  title={pos.replace('-', ' ')}
+                                >
+                                  {pos === 'top-left' && <CornerUpLeft size={14} />}
+                                  {pos === 'above' && <ArrowUp size={14} />}
+                                  {pos === 'top-right' && <CornerUpRight size={14} />}
+                                  {pos === 'left' && <ArrowLeft size={14} />}
+                                  {pos === 'center' && <Circle size={14} />}
+                                  {pos === 'right' && <ArrowRight size={14} />}
+                                  {pos === 'bottom-left' && <CornerDownLeft size={14} />}
+                                  {pos === 'below' && <ArrowDown size={14} />}
+                                  {pos === 'bottom-right' && <CornerDownRight size={14} />}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Posiciones personalizadas */}
+                          {(!element.relativePosition && (element.relativeVertical || element.relativeHorizontal)) && (
+                            <div className="space-y-3">
+                              {/* Posición vertical */}
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-2">Vertical</label>
+                                <div className="flex gap-2">
+                                  {(['top', 'center', 'bottom'] as const).map((pos) => (
+                                    <button
+                                      key={pos}
+                                      onClick={() => updateElement(selectedElement, { relativeVertical: pos })}
+                                      className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
+                                        element.relativeVertical === pos 
+                                          ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                      }`}
+                                    >
+                                      {pos === 'top' && <ArrowUp size={14} />}
+                                      {pos === 'center' && <Circle size={14} />}
+                                      {pos === 'bottom' && <ArrowDown size={14} />}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Posición horizontal */}
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-2">Horizontal</label>
+                                <div className="flex gap-2">
+                                  {(['left', 'center', 'right'] as const).map((pos) => (
+                                    <button
+                                      key={pos}
+                                      onClick={() => updateElement(selectedElement, { relativeHorizontal: pos })}
+                                      className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
+                                        element.relativeHorizontal === pos 
+                                          ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                      }`}
+                                    >
+                                      {pos === 'left' && <ArrowLeft size={14} />}
+                                      {pos === 'center' && <Circle size={14} />}
+                                      {pos === 'right' && <ArrowRight size={14} />}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Offset */}
+                      {element.relativeTo && (element.relativePosition || element.relativeVertical || element.relativeHorizontal) && (
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-gray-700">Offset (px)</label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">X</label>
+                              <input
+                                type="number"
+                                value={element.relativeOffset?.x || 0}
+                                onChange={(e) => updateElement(selectedElement, { 
+                                  relativeOffset: { 
+                                    x: Number(e.target.value), 
+                                    y: element.relativeOffset?.y || 0 
+                                  } 
+                                })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Y</label>
+                              <input
+                                type="number"
+                                value={element.relativeOffset?.y || 0}
+                                onChange={(e) => updateElement(selectedElement, { 
+                                  relativeOffset: { 
+                                    x: element.relativeOffset?.x || 0, 
+                                    y: Number(e.target.value) 
+                                  } 
+                                })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Instrucciones de movimiento con teclado */}
+                  
+
+                  {element.type === 'text' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Contenido</label>
+                        <textarea
+                          value={element.content}
+                          onChange={(e) => updateElement(selectedElement, { content: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          rows={3}
+                          placeholder="Texto del elemento..."
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Tamaño de fuente</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="range"
+                            min="8"
+                            max="32"
+                            value={element.fontSize || 14}
+                            onChange={(e) => updateElementFontSize(selectedElement, Number(e.target.value))}
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                          />
+                          <span className="text-sm text-gray-700 w-12 text-center font-medium">
+                            {element.fontSize || 14}px
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Alineación</label>
+                        <div className="flex gap-2">
+                          {(['left', 'center', 'right', 'justify'] as const).map((align) => (
+                            <button
+                              key={align}
+                              onClick={() => updateElementTextAlign(selectedElement, align)}
+                              className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
+                                element.textAlign === align 
+                                  ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                              }`}
+                              title={`Alinear ${align === 'left' ? 'izquierda' : align === 'center' ? 'centro' : align === 'right' ? 'derecha' : 'justificar'}`}
+                            >
+                              {align === 'left' ? <AlignLeft size={16} /> : align === 'center' ? <AlignCenter size={16} /> : align === 'right' ? <AlignRight size={16} /> : <AlignJustify size={16} />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Propiedades JSON disponibles</label>
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const currentContent = element.content;
+                              const newContent = currentContent + `{{${e.target.value}}}`;
+                              updateElement(selectedElement, { content: newContent });
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          defaultValue=""
+                        >
+                          <option value="">Seleccionar propiedad...</option>
+                          {currentJsonData && generateJsonPaths(currentJsonData).map(path => (
+                            <option key={path} value={path}>{path}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {element.type === 'table' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Ruta de datos (ej: productos.items)
+                        </label>
+                        <input
+                          type="text"
+                          value={element.config?.dataPath || ''}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              dataPath: e.target.value 
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          placeholder="productos.items"
+                        />
+                        <div className="text-xs text-gray-500 mt-2">
+                          Ejemplo: productos.items, venta.detalles, etc.
+                        </div>
+                        {element.config?.dataPath && (
+                          <div className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Ruta configurada: {element.config.dataPath}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Tamaño de fuente de tabla
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="range"
+                            min="8"
+                            max="20"
+                            value={element.config?.fontSize || 12}
+                            onChange={(e) => updateElement(selectedElement, { 
+                              config: { 
+                                ...element.config, 
+                                fontSize: Number(e.target.value) 
+                              } 
+                            })}
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                          />
+                          <span className="text-sm text-gray-700 w-12 text-center font-medium">
+                            {element.config?.fontSize || 12}px
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Mostrar bordes
+                        </label>
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="tableBorders"
+                              checked={element.config?.showBorders !== false}
+                              onChange={() => updateElement(selectedElement, { 
+                                config: { 
+                                  ...element.config, 
+                                  showBorders: true 
+                                } 
+                              })}
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">Sí</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="tableBorders"
+                              checked={element.config?.showBorders === false}
+                              onChange={() => updateElement(selectedElement, { 
+                                config: { 
+                                  ...element.config, 
+                                  showBorders: false 
+                                } 
+                              })}
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">No</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Mostrar encabezado
+                        </label>
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="tableHeader"
+                              checked={element.config?.showHeader !== false}
+                              onChange={() => updateElement(selectedElement, { 
+                                config: { 
+                                  ...element.config, 
+                                  showHeader: true 
+                                } 
+                              })}
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">Sí</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="tableHeader"
+                              checked={element.config?.showHeader === false}
+                              onChange={() => updateElement(selectedElement, { 
+                                config: { 
+                                  ...element.config, 
+                                  showHeader: false 
+                                } 
+                              })}
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">No</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Fondo del encabezado
+                        </label>
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="tableHeaderBackground"
+                              checked={element.config?.showHeaderBackground !== false}
+                              onChange={() => updateElement(selectedElement, { 
+                                config: { 
+                                  ...element.config, 
+                                  showHeaderBackground: true 
+                                } 
+                              })}
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">Con fondo gris</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="tableHeaderBackground"
+                              checked={element.config?.showHeaderBackground === false}
+                              onChange={() => updateElement(selectedElement, { 
+                                config: { 
+                                  ...element.config, 
+                                  showHeaderBackground: false 
+                                } 
+                              })}
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">Sin fondo</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Columnas
+                        </label>
+                        <div className="text-sm text-blue-600 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+                          <Info size={16} />
+                          <strong>Consejo:</strong> Puedes reordenar las columnas arrastrándolas o usando los botones ↑↓
+                        </div>
+                        {element.config?.columns?.length > 0 && (
+                          <div className="text-sm text-green-600 mb-3 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            {element.config.columns.length} columna(s) configurada(s)
+                          </div>
+                        )}
+                        
+                        {/* Información de depuración */}
+                        {element.config?.dataPath && element.config?.columns?.length > 0 && (
+                          <div className="text-sm text-blue-600 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="font-medium mb-1">Ruta de datos: {element.config.dataPath}</div>
+                            <div className="font-medium mb-1">Columnas:</div>
+                            <ul className="ml-3 mt-1 space-y-1">
+                              {element.config.columns.map((col: TableColumn, index: number) => (
+                                <li key={index} className="flex items-center gap-1">
+                                  <span className="w-1 h-1 bg-blue-500 rounded-full"></span>
+                                  {col.header} → {col.property}
+                                </li>
+                              ))}
+                            </ul>
+                            <div className="mt-2 text-gray-600 flex items-center gap-2">
+                              <Info size={14} />
+                              Revisa la consola para ver los datos cargados
+                            </div>
+                          </div>
+                        )}
+                        {(element.config?.columns || []).map((column: TableColumn, index: number) => (
+                          <div 
+                            key={index} 
+                            className={`space-y-3 mb-4 p-4 border rounded-lg transition-all duration-200 ${
+                              draggedColumnIndex === index 
+                                ? 'border-blue-500 bg-blue-50 shadow-lg opacity-50' 
+                                : isDraggingColumn && draggedColumnIndex !== index
+                                ? 'border-dashed border-gray-300 bg-gray-50'
+                                : 'border-gray-200 bg-gray-50'
+                            }`}
+                            draggable
+                            onDragStart={(e) => handleColumnDragStart(e, index)}
+                            onDragOver={handleColumnDragOver}
+                            onDrop={(e) => handleColumnDrop(e, index)}
+                            onDragEnd={handleColumnDragEnd}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <GripVertical size={16} className="text-gray-400 cursor-move" />
+                                <span className="text-sm font-medium text-gray-700">Columna {index + 1}</span>
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => {
+                                      if (index > 0) {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        const temp = newColumns[index];
+                                        newColumns[index] = newColumns[index - 1];
+                                        newColumns[index - 1] = temp;
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }
+                                    }}
+                                    disabled={index === 0}
+                                    className={`px-2 py-1 rounded-lg text-sm transition-all duration-200 flex items-center justify-center ${
+                                      index === 0 
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                        : 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm'
+                                    }`}
+                                    title="Mover hacia arriba"
+                                  >
+                                    <ArrowUp size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (index < (element.config?.columns || []).length - 1) {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        const temp = newColumns[index];
+                                        newColumns[index] = newColumns[index + 1];
+                                        newColumns[index + 1] = temp;
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }
+                                    }}
+                                    disabled={index === (element.config?.columns || []).length - 1}
+                                    className={`px-2 py-1 rounded-lg text-sm transition-all duration-200 flex items-center justify-center ${
+                                      index === (element.config?.columns || []).length - 1 
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                        : 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm'
+                                    }`}
+                                    title="Mover hacia abajo"
+                                  >
+                                    <ArrowDown size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const newColumns = (element.config?.columns || []).filter((_: TableColumn, i: number) => i !== index);
+                                  updateElement(selectedElement, { 
+                                    config: { 
+                                      ...element.config, 
+                                      columns: newColumns 
+                                    } 
+                                  });
+                                }}
+                                className="px-2 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm flex items-center justify-center transition-all duration-200 shadow-sm"
+                                title="Eliminar columna"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                                                        <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={column.header}
+                                onChange={(e) => {
+                                  const newColumns = [...(element.config?.columns || [])];
+                                  newColumns[index] = { ...newColumns[index], header: e.target.value };
+                                  updateElement(selectedElement, { 
+                                    config: { 
+                                      ...element.config, 
+                                      columns: newColumns 
+                                    } 
+                                  });
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                placeholder="Encabezado de la columna"
+                              />
+                              <input
+                                type="text"
+                                value={column.property}
+                                onChange={(e) => {
+                                  const newColumns = [...(element.config?.columns || [])];
+                                  newColumns[index] = { ...newColumns[index], property: e.target.value };
+                                  updateElement(selectedElement, { 
+                                    config: { 
+                                      ...element.config, 
+                                      columns: newColumns 
+                                    } 
+                                  });
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                placeholder="Propiedad del JSON (ej: nombre)"
+                              />
+                            </div>
+                            
+                            {/* Configuraciones adicionales de la columna */}
+                            <div className="pt-2 border-t border-gray-200">
+                              <div className="space-y-2">
+                                {/* Alineación */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Alineación:</label>
+                                  <div className="flex gap-1">
+                                    {(['left', 'center', 'right'] as const).map((align) => (
+                                      <button
+                                        key={align}
+                                        onClick={() => {
+                                          const newColumns = [...(element.config?.columns || [])];
+                                          newColumns[index] = { 
+                                            ...newColumns[index], 
+                                            textAlign: align 
+                                          };
+                                          updateElement(selectedElement, { 
+                                            config: { 
+                                              ...element.config, 
+                                              columns: newColumns 
+                                            } 
+                                          });
+                                        }}
+                                        className={`flex-1 px-2 py-1 text-xs rounded border transition-colors flex items-center justify-center ${
+                                          column.textAlign === align 
+                                            ? 'bg-blue-500 text-white border-blue-500' 
+                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                        title={`Alinear ${align === 'left' ? 'izquierda' : align === 'center' ? 'centro' : 'derecha'}`}
+                                      >
+                                        {align === 'left' ? <AlignLeft size={14} /> : align === 'center' ? <AlignCenter size={14} /> : <AlignRight size={14} />}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                {/* Negrita */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Estilo:</label>
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        newColumns[index] = { 
+                                          ...newColumns[index], 
+                                          bold: !column.bold 
+                                        };
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }}
+                                      className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
+                                        column.bold 
+                                          ? 'bg-blue-500 text-white border-blue-500' 
+                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                      }`}
+                                      title="Negrita"
+                                    >
+                                      <strong>B</strong>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        newColumns[index] = { 
+                                          ...newColumns[index], 
+                                          italic: !column.italic 
+                                        };
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }}
+                                      className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
+                                        column.italic 
+                                          ? 'bg-blue-500 text-white border-blue-500' 
+                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                      }`}
+                                      title="Cursiva"
+                                    >
+                                      <em>I</em>
+                                    </button>
+                                  </div>
+                                </div>
+                                
+                                {/* Formateo */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Formato:</label>
+                                  <select
+                                    value={column.format || 'text'}
+                                    onChange={(e) => {
+                                      const newColumns = [...(element.config?.columns || [])];
+                                      newColumns[index] = { 
+                                        ...newColumns[index], 
+                                        format: e.target.value as any,
+                                        formatOptions: newColumns[index].formatOptions || {}
+                                      };
+                                      updateElement(selectedElement, { 
+                                        config: { 
+                                          ...element.config, 
+                                          columns: newColumns 
+                                        } 
+                                      });
+                                    }}
+                                    className="w-full px-2 py-1 border rounded text-xs text-black"
+                                  >
+                                    <option value="text">Texto</option>
+                                    <option value="number">Número</option>
+                                    <option value="currency">Moneda</option>
+                                    <option value="percentage">Porcentaje</option>
+                                    <option value="date">Fecha</option>
+                                    <option value="datetime">Fecha y Hora</option>
+                                    <option value="uppercase">Mayúsculas</option>
+                                    <option value="lowercase">Minúsculas</option>
+                                    <option value="capitalize">Capitalizar</option>
+                                    <option value="custom">Personalizado</option>
+                                  </select>
+                                </div>
+                                
+                                {/* Opciones específicas según el formato */}
+                                {column.format === 'number' && (
+                                  <div className="space-y-1">
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700">Decimales:</label>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="10"
+                                        value={column.formatOptions?.decimals || 0}
+                                        onChange={(e) => {
+                                          const newColumns = [...(element.config?.columns || [])];
+                                          newColumns[index] = { 
+                                            ...newColumns[index], 
+                                            formatOptions: {
+                                              ...newColumns[index].formatOptions,
+                                              decimals: Number(e.target.value)
+                                            }
+                                          };
+                                          updateElement(selectedElement, { 
+                                            config: { 
+                                              ...element.config, 
+                                              columns: newColumns 
+                                            } 
+                                          });
+                                        }}
+                                        className="w-full px-2 py-1 border rounded text-xs text-black"
+                                      />
+                                    </div>
+                                    <label className="flex items-center text-xs">
+                                      <input
+                                        type="checkbox"
+                                        checked={column.formatOptions?.thousandsSeparator || false}
+                                        onChange={(e) => {
+                                          const newColumns = [...(element.config?.columns || [])];
+                                          newColumns[index] = { 
+                                            ...newColumns[index], 
+                                            formatOptions: {
+                                              ...newColumns[index].formatOptions,
+                                              thousandsSeparator: e.target.checked
+                                            }
+                                          };
+                                          updateElement(selectedElement, { 
+                                            config: { 
+                                              ...element.config, 
+                                              columns: newColumns 
+                                            } 
+                                          });
+                                        }}
+                                        className="mr-1"
+                                      />
+                                      Separador de miles
+                                    </label>
+                                  </div>
+                                )}
+                                
+                                {column.format === 'currency' && (
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700">Moneda:</label>
+                                    <select
+                                      value={column.formatOptions?.currency || 'MXN'}
+                                      onChange={(e) => {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        newColumns[index] = { 
+                                          ...newColumns[index], 
+                                          formatOptions: {
+                                            ...newColumns[index].formatOptions,
+                                            currency: e.target.value as any
+                                          }
+                                        };
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }}
+                                      className="w-full px-2 py-1 border rounded text-xs text-black"
+                                    >
+                                      <option value="MXN">Peso Mexicano ($)</option>
+                                      <option value="USD">Dólar Americano ($)</option>
+                                      <option value="EUR">Euro (€)</option>
+                                    </select>
+                                  </div>
+                                )}
+                                
+                                {column.format === 'date' && (
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700">Formato:</label>
+                                    <input
+                                      type="text"
+                                      value={column.formatOptions?.dateFormat || 'DD/MM/YYYY'}
+                                      onChange={(e) => {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        newColumns[index] = { 
+                                          ...newColumns[index], 
+                                          formatOptions: {
+                                            ...newColumns[index].formatOptions,
+                                            dateFormat: e.target.value
+                                          }
+                                        };
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }}
+                                      className="w-full px-2 py-1 border rounded text-xs text-black"
+                                      placeholder="DD/MM/YYYY"
+                                    />
+                                  </div>
+                                )}
+                                
+                                {column.format === 'datetime' && (
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700">Formato:</label>
+                                    <input
+                                      type="text"
+                                      value={column.formatOptions?.dateFormat || 'DD/MM/YYYY HH:mm'}
+                                      onChange={(e) => {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        newColumns[index] = { 
+                                          ...newColumns[index], 
+                                          formatOptions: {
+                                            ...newColumns[index].formatOptions,
+                                            dateFormat: e.target.value
+                                          }
+                                        };
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }}
+                                      className="w-full px-2 py-1 border rounded text-xs text-black"
+                                      placeholder="DD/MM/YYYY HH:mm"
+                                    />
+                                  </div>
+                                )}
+                                
+                                {column.format === 'custom' && (
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700">Formato personalizado:</label>
+                                    <input
+                                      type="text"
+                                      value={column.formatOptions?.customFormat || ''}
+                                      onChange={(e) => {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        newColumns[index] = { 
+                                          ...newColumns[index], 
+                                          formatOptions: {
+                                            ...newColumns[index].formatOptions,
+                                            customFormat: e.target.value
+                                          }
+                                        };
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }}
+                                      className="w-full px-2 py-1 border rounded text-xs text-black"
+                                      placeholder="ej: {value} ({length} chars)"
+                                    />
+                                  </div>
+                                )}
+                                
+                                {/* Valor por defecto */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700">Valor por defecto:</label>
+                                  <input
+                                    type="text"
+                                    value={column.formatOptions?.defaultValue || ''}
+                                    onChange={(e) => {
+                                      const newColumns = [...(element.config?.columns || [])];
+                                      newColumns[index] = { 
+                                        ...newColumns[index], 
+                                        formatOptions: {
+                                          ...newColumns[index].formatOptions,
+                                          defaultValue: e.target.value
+                                        }
+                                      };
+                                      updateElement(selectedElement, { 
+                                        config: { 
+                                          ...element.config, 
+                                          columns: newColumns 
+                                        } 
+                                      });
+                                    }}
+                                    className="w-full px-2 py-1 border rounded text-xs text-black"
+                                    placeholder="Valor cuando no hay datos"
+                                  />
+                                </div>
+                                
+                                {/* Transformaciones de texto */}
+                                {(column.format === 'text' || !column.format) && (
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700">Transformación:</label>
+                                    <select
+                                      value={column.formatOptions?.transform || 'none'}
+                                      onChange={(e) => {
+                                        const newColumns = [...(element.config?.columns || [])];
+                                        newColumns[index] = { 
+                                          ...newColumns[index], 
+                                          formatOptions: {
+                                            ...newColumns[index].formatOptions,
+                                            transform: e.target.value === 'none' ? undefined : e.target.value as any
+                                          }
+                                        };
+                                        updateElement(selectedElement, { 
+                                          config: { 
+                                            ...element.config, 
+                                            columns: newColumns 
+                                          } 
+                                        });
+                                      }}
+                                      className="w-full px-2 py-1 border rounded text-xs text-black"
+                                    >
+                                      <option value="none">Ninguna</option>
+                                      <option value="truncate">Truncar</option>
+                                      <option value="ellipsis">Con puntos suspensivos</option>
+                                    </select>
+                                    {(column.formatOptions?.transform === 'truncate' || column.formatOptions?.transform === 'ellipsis') && (
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={column.formatOptions?.maxLength || 50}
+                                        onChange={(e) => {
+                                          const newColumns = [...(element.config?.columns || [])];
+                                          newColumns[index] = { 
+                                            ...newColumns[index], 
+                                            formatOptions: {
+                                              ...newColumns[index].formatOptions,
+                                              maxLength: Number(e.target.value)
+                                            }
+                                          };
+                                          updateElement(selectedElement, { 
+                                            config: { 
+                                              ...element.config, 
+                                              columns: newColumns 
+                                            } 
+                                          });
+                                        }}
+                                        className="w-full px-2 py-1 border rounded text-xs text-black mt-1"
+                                        placeholder="Longitud máxima"
+                                      />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => {
+                            const newColumns = [...(element.config?.columns || []), { header: '', property: '' }];
+                            updateElement(selectedElement, { 
+                              config: { 
+                                ...element.config, 
+                                columns: newColumns 
+                              } 
+                            });
+                          }}
+                          className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium transition-all duration-200 shadow-sm"
+                        >
+                          + Agregar Columna
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {element.type === 'qr' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Contenido del QR</label>
+                        <textarea
+                          value={element.content}
+                          onChange={(e) => updateElement(selectedElement, { content: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          rows={3}
+                          placeholder="URL, texto, o datos para el código QR..."
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Tamaño del QR</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            value={element.width}
+                            onChange={(e) => updateElement(selectedElement, { 
+                              width: Number(e.target.value),
+                              height: Number(e.target.value) // Mantener cuadrado
+                            })}
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                          />
+                          <span className="text-sm text-gray-700 w-12 text-center font-medium">
+                            {element.width}px
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Propiedades JSON disponibles</label>
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const currentContent = element.content;
+                              const newContent = currentContent + `{{${e.target.value}}}`;
+                              updateElement(selectedElement, { content: newContent });
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          defaultValue=""
+                        >
+                          <option value="">Seleccionar propiedad...</option>
+                          {currentJsonData && generateJsonPaths(currentJsonData).map(path => (
+                            <option key={path} value={path}>{path}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 11h6v6H3v-6zm2 2v2h2v-2H5zm8 2h6v6h-6v-6zm2 2v2h2v-2h-2z"/>
+                          </svg>
+                          <span className="text-sm font-medium text-purple-800">Información del QR</span>
+                        </div>
+                        <div className="text-xs text-purple-700 space-y-1">
+                          <div>• El código QR se genera automáticamente</div>
+                          <div>• Soporta URLs, texto y datos JSON</div>
+                          <div>• Tamaño recomendado: 100-150px</div>
+                          <div>• Se mantiene cuadrado automáticamente</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {element.type === 'image' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Seleccionar imagen</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, selectedElement)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        />
+                        {element.config?.originalName && (
+                          <div className="mt-2 text-sm text-gray-600 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                            Archivo: {element.config.originalName}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {element.config?.base64Data && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700">Vista previa</label>
+                            <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+                              <img
+                                src={element.config.base64Data}
+                                alt="Vista previa"
+                                className="max-w-full max-h-32 object-contain mx-auto"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700">Tamaño</label>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">Ancho</label>
+                                <input
+                                  type="number"
+                                  value={element.width}
+                                  onChange={(e) => updateElement(selectedElement, { width: Number(e.target.value) })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                  min="10"
+                                  max="500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">Alto</label>
+                                <input
+                                  type="number"
+                                  value={element.height}
+                                  onChange={(e) => updateElement(selectedElement, { height: Number(e.target.value) })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                  min="10"
+                                  max="500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700">Ajuste de imagen</label>
+                            <select
+                              value={element.config?.objectFit || 'contain'}
+                              onChange={(e) => updateElement(selectedElement, {
+                                config: {
+                                  ...element.config,
+                                  objectFit: e.target.value as 'contain' | 'cover' | 'fill' | 'none' | 'scale-down'
+                                }
+                              })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                            >
+                              <option value="contain">Contener (mantener proporción)</option>
+                              <option value="cover">Cubrir (cortar si es necesario)</option>
+                              <option value="fill">Llenar (estirar)</option>
+                              <option value="none">Ninguno (tamaño original)</option>
+                              <option value="scale-down">Reducir (si es necesario)</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="flex items-center gap-3 text-sm font-medium mb-2 text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={element.config?.maintainAspectRatio !== false}
+                                onChange={(e) => updateElement(selectedElement, {
+                                  config: {
+                                    ...element.config,
+                                    maintainAspectRatio: e.target.checked
+                                  }
+                                })}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              Mantener proporción al redimensionar
+                            </label>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Image size={18} className="text-orange-600" />
+                          <span className="text-sm font-medium text-orange-800">Información de la imagen</span>
+                        </div>
+                        <div className="text-xs text-orange-700 space-y-1">
+                          <div>• Formatos soportados: JPG, PNG, GIF, WebP</div>
+                          <div>• Tamaño recomendado: 150-300px</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {element.type === 'formula' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Código JavaScript</label>
+                        <CodeMirrorEditor
+                          value={element.config?.javascriptCode || ''}
+                          onChange={(value) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              javascriptCode: value 
+                            } 
+                          })}
+                          placeholder="// Ejemplo:&#10;const total = data.venta.items.reduce((sum, item) => sum + item.precio, 0);&#10;return total.toFixed(2);"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Formato de salida</label>
+                        <select
+                          value={element.config?.outputFormat || 'text'}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              outputFormat: e.target.value as 'text' | 'number' | 'boolean' | 'json'
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        >
+                          <option value="text">Texto</option>
+                          <option value="number">Número</option>
+                          <option value="boolean">Booleano</option>
+                          <option value="json">JSON</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Manejo de errores</label>
+                        <select
+                          value={element.config?.errorHandling || 'show-default'}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              errorHandling: e.target.value as 'show-error' | 'hide-error' | 'show-default'
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        >
+                          <option value="show-error">Mostrar error</option>
+                          <option value="hide-error">Ocultar error</option>
+                          <option value="show-default">Mostrar valor por defecto</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Valor por defecto</label>
+                        <input
+                          type="text"
+                          value={element.config?.defaultValue || ''}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              defaultValue: e.target.value 
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          placeholder="Valor a mostrar si hay error"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Timeout (ms)</label>
+                        <input
+                          type="number"
+                          value={element.config?.timeout || 5000}
+                          onChange={(e) => updateElement(selectedElement, { 
+                            config: { 
+                              ...element.config, 
+                              timeout: Number(e.target.value) 
+                            } 
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          min="1000"
+                          max="30000"
+                          step="1000"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Tamaño de fuente</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="range"
+                            min="8"
+                            max="32"
+                            value={element.fontSize || 14}
+                            onChange={(e) => updateElementFontSize(selectedElement, Number(e.target.value))}
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                          />
+                          <span className="text-sm text-gray-700 w-12 text-center font-medium">
+                            {element.fontSize || 14}px
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Alineación</label>
+                        <div className="flex gap-2">
+                          {(['left', 'center', 'right', 'justify'] as const).map((align) => (
+                            <button
+                              key={align}
+                              onClick={() => updateElementTextAlign(selectedElement, align)}
+                              className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center ${
+                                element.textAlign === align 
+                                  ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                              }`}
+                              title={`Alinear ${align === 'left' ? 'izquierda' : align === 'center' ? 'centro' : align === 'right' ? 'derecha' : 'justificar'}`}
+                            >
+                              {align === 'left' ? <AlignLeft size={16} /> : align === 'center' ? <AlignCenter size={16} /> : align === 'right' ? <AlignRight size={16} /> : <AlignJustify size={16} />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Code size={18} className="text-red-600" />
+                          <span className="text-sm font-medium text-red-800">Información de la fórmula</span>
+                        </div>
+                        <div className="text-xs text-red-700 space-y-1">
+                          <div>• Usa JavaScript básico para manipular datos JSON</div>
+                          <div>• Variable <code className="bg-red-100 px-1 rounded">data</code> contiene el JSON cargado</div>
+                          <div>• Debes usar <code className="bg-red-100 px-1 rounded">return</code> para devolver el resultado</div>
+                          <div>• Ejecución segura con timeout configurable</div>
+                          <div>• Soporta operaciones matemáticas, strings y arrays</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
         )}
 
         {/* Visor de JSON */}
         {showJsonViewer && (
-          <JsonViewer
-            jsonData={jsonData}
-            onClose={() => setShowJsonViewer(false)}
-          />
+          <div className="w-82 bg-white shadow-lg p-4 border-l border-gray-200 overflow-y-auto max-h-screen">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-black">Visor de JSON</h3>
+              <button
+                onClick={() => setShowJsonViewer(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
+                title="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            <div 
+              className="json-container"
+              dangerouslySetInnerHTML={{ __html: generateJsonViewerHTML() }}
+            />
+          </div>
         )}
 
-       <Canvas 
-        elements={elements}
-        ticketWidth={ticketWidth}
-        widthUnit={widthUnit}
-        zoomLevel={zoomLevel}
-        showDebug={showDebug}
-        selectedElement={selectedElement}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        onClick={handleElementClick}
-        onWheel={handleWheelZoom}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onZoomReset={handleZoomReset}
-        convertWidth={convertWidth}
-        calculateContentHeight={calculateContentHeight}
-        handleElementClick={handleElementClick}
-        handleElementDragStart={handleElementDragStart}
-        handleElementDragEnd={handleElementDragEnd}
-        handleResizeStart={handleResizeStart}
-        deleteElement={deleteElement}
-        canvasRef={canvasRef}
-        currentJsonData={jsonData}
-        
-        
-        
-        
-       />
+        {/* Área de diseño */}
+        <div className="flex-1 p-4 overflow-auto">
+          <div className="bg-white rounded-lg shadow-lg p-4 h-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-black">Área de Diseño</h2>
+              
+              {/* Controles de zoom */}
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={handleZoomOut}
+                  className="px-2 py-1 bg-white rounded text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
+                  title="Zoom Out (Shift + Scroll)"
+                >
+                  <ZoomOut size={16} className="!text-gray-700" />
+                </button>
+                <span className="px-2 py-1 text-sm font-medium text-gray-700 min-w-[60px] text-center">
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+                <button
+                  onClick={handleZoomIn}
+                  className="px-2 py-1 bg-white rounded text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
+                  title="Zoom In (Shift + Scroll)"
+                >
+                  <ZoomIn size={16} className="!text-gray-700" />
+                </button>
+                <button
+                  onClick={handleZoomReset}
+                  className="px-2 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors flex items-center justify-center"
+                  title="Reset Zoom"
+                >
+                  <RotateCcw size={16} />
+                </button>
+              </div>
+            </div>
+            
+            <div onWheel={handleWheelZoom} className="overflow-auto border border-gray-200 rounded" style={{ height: 'calc(100vh - 200px)' }}>
+              <div
+                ref={canvasRef}
+                className="border-2 border-dashed border-gray-300 bg-gray-50 relative"
+                style={{ 
+                  width: `${convertWidth(ticketWidth, widthUnit)}px`,
+                  minHeight: '1200px',
+                  margin: '20px auto',
+                  transform: `scale(${zoomLevel})`,
+                  transformOrigin: 'top center'
+                }}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={handleCanvasClick}
+                
+              >
+              {/* Debug overlay - mostrar información de límites */}
+              {showDebug && (
+                <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white text-xs p-2 rounded pointer-events-none z-10">
+                  <div>Ticket Width: {ticketWidth} {widthUnit} ({convertWidth(ticketWidth, widthUnit)}px)</div>
+                  <div>Canvas Width: {convertWidth(ticketWidth, widthUnit)}px</div>
+                  {selectedElement && (
+                    <div>
+                      Selected: {selectedElement}
+                      <br />
+                      X: {elements.find(el => el.id === selectedElement)?.x}px
+                      <br />
+                      Width: {elements.find(el => el.id === selectedElement)?.width}px
+                      <br />
+                      Max Width: {convertWidth(ticketWidth, widthUnit) - (elements.find(el => el.id === selectedElement)?.x || 0)}px
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Línea de límite derecho del ticket */}
+              {showDebug && (
+                <div 
+                  className="absolute top-0 bottom-0 w-1 bg-red-500 opacity-50 pointer-events-none"
+                  style={{ 
+                    left: `${convertWidth(ticketWidth, widthUnit)}px`,
+                    zIndex: 5
+                  }}
+                />
+              )}
+              {elements.map(element => (
+                <div
+                  key={element.id}
+                  draggable
+                  onDragStart={(e) => handleElementDragStart(e, element.id)}
+                  onDragEnd={handleElementDragEnd}
+                  className={`absolute cursor-move ${
+                    selectedElement === element.id ? 'ring-2 ring-blue-500 border-2 border-blue-500' : 'border-2 border-transparent'
+                  }`}
+                  style={{
+                    left: element.x,
+                    top: element.y,
+                    width: element.width,
+                    height: element.height,
+                    backgroundColor: element.type === 'text' ? 'transparent' : 'transparent',
+                   
+                    padding: '5px',
+                    userSelect: 'none',
+                    minHeight: element.type === 'table' ? '30px' : 'auto',
+                    boxShadow: showDebug && element.width >= convertWidth(ticketWidth, widthUnit) - element.x 
+                      ? '0 0 0 2px rgba(239, 68, 68, 0.5)' 
+                      : 'none'
+                  }}
+                  onClick={() => handleElementClick(element.id)}
+                >
+                  {/* Indicador de relación */}
+                  {element.relativeTo && (
+                    <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                      <ArrowRight size={10} />
+                      {(() => {
+                        const relativeElement = elements.find(el => el.id === element.relativeTo);
+                        if (relativeElement?.type === 'text') return 'Texto';
+                        if (relativeElement?.type === 'table') return 'Tabla';
+                        if (relativeElement?.type === 'qr') return 'QR';
+                        if (relativeElement?.type === 'image') return 'Imagen';
+                        return relativeElement?.type || 'Elemento';
+                      })()}
+                    </div>
+                  )}
+                  
+                  {/* Indicador de selección y movimiento con teclado */}
+                  {selectedElement === element.id && (
+                    <div className="absolute -top-6 right-0 bg-green-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                      <Move size={10} />
+                      Mover con flechas
+                    </div>
+                  )}
+                  
+                  {/* Indicador de configuración de tabla */}
+                  {element.type === 'table' && element.config?.dataPath && element.config?.columns?.length > 0 && (
+                    <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                      <Table size={10} />
+                      {element.config.columns.length} col(s) - {element.config.dataPath}
+                    </div>
+                  )}
+                  
+                  {element.type === 'text' ? (
+                    <div className="relative w-full h-full">
+                      <div
+                        className="w-full h-full bg-transparent text-black font-medium pointer-events-none overflow-hidden"
+                        style={{ 
+                          fontSize: `${element.fontSize || 14}px`, 
+                          color: '#000000',
+                          textAlign: element.textAlign || 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis'
+                        }}
+                        title={element.content || (currentJsonData ? "Texto... Usa {{propiedad}} o {{arreglo;propiedad;condición=valor}} o {{propiedad | formateador}} para datos JSON" : "Texto...")}
+                      >
+                        {element.content || (currentJsonData ? "Texto... Usa {{propiedad}} o {{arreglo;propiedad;condición=valor}} o {{propiedad | formateador}} para datos JSON" : "Texto...")}
+                      </div>
+                      {element.content.includes('{{') && (
+                        <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                          <Braces size={10} />
+                          JSON
+                        </div>
+                      )}
+                    </div>
+                  ) : element.type === 'qr' ? (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <div className="w-full h-full flex items-center justify-center bg-white border border-gray-300 rounded">
+                        <div className="text-center">
+                          <div className="w-8 h-8 mx-auto mb-1 bg-purple-100 rounded flex items-center justify-center">
+                            <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 11h6v6H3v-6zm2 2v2h2v-2H5zm8 2h6v6h-6v-6zm2 2v2h2v-2h-2z"/>
+                            </svg>
+                          </div>
+                          <div className="text-xs text-gray-600 font-medium">QR Code</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {element.content || "Contenido del QR"}
+                          </div>
+                        </div>
+                      </div>
+                      {element.content.includes('{{') && (
+                        <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                          <Braces size={10} />
+                          JSON
+                        </div>
+                      )}
+                    </div>
+                  ) : element.type === 'image' ? (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      {element.config?.base64Data ? (
+                        <img
+                          src={element.config.base64Data}
+                          alt={element.config.originalName || "Imagen"}
+                          className="w-full h-full"
+                          style={{
+                            objectFit: element.config?.objectFit || 'contain'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-white border border-gray-300 rounded">
+                          <div className="text-center">
+                            <div className="w-8 h-8 mx-auto mb-1 bg-orange-100 rounded flex items-center justify-center">
+                              <Image size={16} className="text-orange-600" />
+                            </div>
+                            <div className="text-xs text-gray-600 font-medium">Imagen</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {element.content || "Seleccionar imagen..."}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : element.type === 'formula' ? (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <div className="w-full h-full flex items-center justify-center ">
+                        <div className="text-center">
+                          
+                          
+                          <div className="text-xs text-gray-500 mt-1">
+                            {element.config?.javascriptCode || "Código JavaScript<>..."}
+                          </div>
+                        </div>
+                      </div>
+                      {element.config?.javascriptCode && (
+                        <div className="absolute top-0 right-0 bg-red-500 text-white text-xs px-1 rounded pointer-events-none flex items-center gap-1">
+                          <Code size={10} />
+                          JS
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div 
+                      className="text-xs h-full flex items-center justify-center text-black font-medium"
+                      style={{ fontSize: `${element.fontSize || 12}px`, color: '#000000' }}
+                    >
+                      Tabla: {element.config?.columns?.length || 0} columnas
+                    </div>
+                  )}
+                  
+                  {/* Controles de redimensionamiento */}
+                  <div
+                    className={`absolute bottom-0 right-0 w-4 h-4 cursor-se-resize ${
+                      showDebug && element.width >= convertWidth(ticketWidth, widthUnit) - element.x 
+                        ? 'bg-red-500' 
+                        : 'bg-blue-500'
+                    } opacity-50 hover:opacity-100 group`}
+                    onMouseDown={(e) => handleResizeStart(e, element.id)}
+                    title={showDebug ? `Ancho actual: ${element.width}px | Máximo: ${convertWidth(ticketWidth, widthUnit) - element.x}px` : "Redimensionar"}
+                  />
+                  {/* Tooltip de información de límites */}
+                  {showDebug && (
+                    <div className="absolute -top-8 right-0 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                      {element.width}px / {convertWidth(ticketWidth, widthUnit) - element.x}px
+                    </div>
+                  )}
+                  
+                  {selectedElement === element.id && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteElement(element.id);
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs hover:bg-red-600 flex items-center justify-center"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Handle de redimensionamiento de propiedades */}
         {showProperties && selectedElement && (
@@ -4180,15 +6470,31 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
         {/* Área de vista previa */}
         {showPreview && (
-          <PreviewPanel
-            previewHTML={previewHTML}
-            ticketWidth={ticketWidth}
-            widthUnit={widthUnit}
-            elementsCount={elements.length}
-            convertWidth={convertWidth}
-            calculateContentHeight={calculateContentHeight}
-          />
+          <div className="w-96 bg-white shadow-lg p-4 border-l border-gray-200 overflow-y-auto max-h-screen">
+            <h3 className="text-lg font-bold mb-4 text-black">Vista Previa</h3>
+            <div className="mb-4 text-sm text-black">
+              <p>Vista previa del ticket final:</p>
+              <div className="mt-2 text-xs text-gray-600">
+                <p>Dimensiones: {convertWidth(ticketWidth, widthUnit)}px × {calculateContentHeight()}px</p>
+                <p>Elementos: {elements.length}</p>
+              </div>
+            </div>
+            <div className="flex justify-center items-center border border-gray-300 rounded p-2 bg-gray-50">
+              <iframe
+                srcDoc={previewHTML}
+                className="w-full"
+                style={{ 
+                  height: `${Math.min(calculateContentHeight() + 100, 600)}px`,
+                  border: 'none',
+                  backgroundColor: 'white'
+                }}
+                
+                title="Vista previa del ticket"
+                sandbox="allow-scripts allow-same-origin"
+              />
+            </div>
           
+          </div>
         )}
       </div>
     </div>
