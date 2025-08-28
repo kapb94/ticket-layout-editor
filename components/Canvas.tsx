@@ -4,7 +4,7 @@ import { TicketElement } from './types';
 import ElementRenderer from './ElementRenderer';
 
 interface CanvasProps {
-  canvasRef: React.RefObject<HTMLDivElement>;
+  canvasRef: React.RefObject<HTMLDivElement | null>;
   ticketWidth: number;
   widthUnit: string;
   zoomLevel: number;

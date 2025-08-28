@@ -1,291 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { crosshairCursor,EditorView, highlightActiveLine, highlightActiveLineGutter, lineNumbers, rectangularSelection, drawSelection, dropCursor, highlightSpecialChars } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
-
 import Head from 'next/head';
-import { 
-  Eye, 
-  Save, 
-  Trash2, 
-  BookOpen, 
-  Download, 
-  Upload, 
-  ZoomIn, 
-  ZoomOut, 
-  RotateCcw, 
-  FileText, 
-  Table, 
-  Settings, 
-  Code, 
-  Copy, 
-  ArrowUp, 
-  ArrowDown, 
-  ArrowLeft,
-  ArrowRight,
-  X, 
-  Move, 
-  Maximize2, 
-  Minus, 
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  AlertCircle,
-  Info,
-  HelpCircle,
-  GripVertical,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  Bold,
-  Italic,
-  Type,
-  Database,
-  Braces,
-  Hash,
-  Keyboard,
-  CornerUpLeft,
-  CornerUpRight,
-  CornerDownLeft,
-  CornerDownRight,
-  Circle,
-  FolderOpen,
-  RefreshCw,
-  ClipboardList,
-  Bug,
-  Settings2,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Ruler,
-  Layers,
-  Image,
-  Sidebar
-} from 'lucide-react';
-import { bracketMatching, defaultHighlightStyle, foldGutter, indentOnInput, syntaxHighlighting } from '@codemirror/language';
-import { autocompletion, closeBrackets } from '@codemirror/autocomplete';
-import { Canvas, Header, ImportSuccessModal, JsonViewer, PreviewPanel, PropertiesPanel, Toolbar } from '@/components';
-
-interface TicketElement {
-  id: string;
-  type: 'text' | 'table' | 'qr' | 'image' | 'formula';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  content: string;
-  fontSize?: number;
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
-  config?: any;
-  relativeTo?: string; // ID del elemento al que está relacionado
-  relativePosition?: 'below' | 'above' | 'left' | 'right' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'center';
-  relativeVertical?: 'top' | 'center' | 'bottom'; // Posición vertical relativa
-  relativeHorizontal?: 'left' | 'center' | 'right'; // Posición horizontal relativa
-  relativeOffset?: { x: number; y: number }; // Offset desde la posición relativa
-}
-
-interface TableColumn {
-  header: string;
-  property: string;
-  textAlign?: 'left' | 'center' | 'right';
-  bold?: boolean;
-  italic?: boolean;
-  // Nuevas propiedades para formateo avanzado
-  format?: 'text' | 'number' | 'currency' | 'percentage' | 'date' | 'datetime' | 'uppercase' | 'lowercase' | 'capitalize' | 'custom';
-  formatOptions?: {
-    // Para moneda
-    currency?: 'USD' | 'MXN' | 'EUR';
-    // Para números
-    decimals?: number;
-    thousandsSeparator?: boolean;
-    // Para fechas
-    dateFormat?: string;
-    // Para valores personalizados
-    customFormat?: string;
-    // Para valores por defecto
-    defaultValue?: string;
-    // Para transformaciones
-    transform?: 'truncate' | 'wrap' | 'ellipsis';
-    maxLength?: number;
-  };
-}
-
-interface TableConfig {
-  dataPath: string;
-  columns: TableColumn[];
-  fontSize?: number;
-  showBorders?: boolean;
-  showHeader?: boolean;
-  showHeaderBackground?: boolean;
-}
-
-interface ImageConfig {
-  base64Data?: string;
-  originalName?: string;
-  mimeType?: string;
-  maintainAspectRatio?: boolean;
-  objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
-}
-
-interface FormulaConfig {
-  javascriptCode: string;
-  outputFormat: 'text' | 'number' | 'boolean' | 'json';
-  errorHandling: 'show-error' | 'hide-error' | 'show-default';
-  defaultValue: string;
-  timeout: number; // milliseconds
-}
-
-// Interfaz para la configuración completa del proyecto
-interface ProjectConfig {
-  version: string;
-  name: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-  ticketWidth: number;
-  widthUnit: 'px' | 'in' | 'cm';
-  elements: TicketElement[];
-  jsonData?: any;
-}
-
-// 🔁 Función que navega por el objeto externo
-const getSuggestions = (path:any,jsonData:any) => {
-  const parts = path.split(".");
-  let obj = { data: jsonData };
-  for (let part of parts) {
-    if (obj && typeof obj === "object") {
-      obj = obj[part as keyof typeof obj];
-    } else {
-      return [];
-    }
-  }
-  if (!obj || typeof obj !== "object") return [];
-
-  return Object.keys(obj).map((key) => ({
-    label: key,
-    type: "property",
-    info: path + "." + key
-  }));
-};
-
-// 🎯 Función de autocompletado
-const customAutocomplete = (context:any,jsonData:any) => {
-  const word = context.matchBefore(/[\w\.]+/);
-  if (!word || word.from == word.to) return null;
-
-  const text = word.text;
-  if (text.startsWith("data")) {
-    const options = getSuggestions(text,jsonData);
-    return {
-      from: word.from,
-      options
-    };
-  }
-
-  return null;
-};
-// Componente para el editor de CodeMirror
-const CodeMirrorEditor = ({ value, onChange, placeholder }: { 
-  value: string; 
-  onChange: (value: string) => void; 
-  placeholder?: string;
-}) => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const editorViewRef = useRef<EditorView | null>(null);
-
-  useEffect(() => {
-    if (editorRef.current && !editorViewRef.current) {
-      const state = EditorState.create({
-        doc: value || '',
-        extensions: [
-           // A line number gutter
-          lineNumbers(),
-          // A gutter with code folding markers
-          foldGutter(),
-          // Replace non-printable characters with placeholders
-          highlightSpecialChars(),
-         
-          // Replace native cursor/selection with our own
-          drawSelection(),
-          // Show a drop cursor when dragging over the editor
-          dropCursor(),
-          // Allow multiple cursors/selections
-          EditorState.allowMultipleSelections.of(true),
-          // Re-indent lines when typing specific input
-          indentOnInput(),
-          // Highlight syntax with a default style
-          syntaxHighlighting(defaultHighlightStyle),
-          // Highlight matching brackets near cursor
-          bracketMatching(),
-          // Automatically close brackets
-          closeBrackets(),
-          // Load the autocompletion system
-          autocompletion(),
-          // Allow alt-drag to select rectangular regions
-          rectangularSelection(),
-          // Change the cursor to a crosshair when holding alt
-          crosshairCursor(),
-          // Style the current line specially
-          highlightActiveLine(),
-          // Style the gutter for current line specially
-          highlightActiveLineGutter(),
-          // Highlight text that matches the selected text
-          javascript(),
-          EditorView.theme({
-            ".cm-content, .cm-gutter": {minHeight: "200px",color: "black"}
-          }),
-          EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              const content = update.state.doc.toString();
-              onChange(content);
-            }
-          }),
-          
-          
-        ]
-      });
-
-      const view = new EditorView({
-        state,
-        parent: editorRef.current
-      });
-
-      editorViewRef.current = view;
-    }
-
-    return () => {
-      if (editorViewRef.current) {
-        editorViewRef.current.destroy();
-        editorViewRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (editorViewRef.current && value !== editorViewRef.current.state.doc.toString()) {
-      const transaction = editorViewRef.current.state.update({
-        changes: {
-          from: 0,
-          to: editorViewRef.current.state.doc.length,
-          insert: value
-        }
-      });
-      editorViewRef.current.dispatch(transaction);
-    }
-  }, [value]);
-
-  return (
-    <div className="w-full">
-      <div ref={editorRef} className="w-full border-2 border-gray-300 rounded-md code-editor" />
-      <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
-        <span>💡 Tip: Usa <code className="bg-gray-100 px-1 rounded">data</code> para acceder a los datos JSON</span>
-        
-      </div>
-    </div>
-  );
-};
+import { Canvas, Header, ImportSuccessModal, JsonViewer, PreviewPanel, ProjectNameModal, PropertiesPanel, Sidebar, StartupModal, Toolbar } from '@/components';
+import { TicketElement, defaultJsonData, FormulaConfig, TableColumn, ProjectConfig } from '@/components/types';
 
 export default function TicketEditor() {
   const [ticketWidth, setTicketWidth] = useState(300);
@@ -332,85 +48,7 @@ export default function TicketEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const projectFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Datos JSON por defecto (hardcodeados)
-  const defaultJsonData = {
-    "empresa": {
-      "nombre": "Mi Empresa S.A.",
-      "direccion": "Calle Principal 123",
-      "telefono": "(555) 123-4567",
-      "email": "info@miempresa.com",
-      "rfc": "ABC123456789"
-    },
-    "venta": {
-      "numero": "TICK-2024-001",
-      "fecha": "2024-01-15",
-      "hora": "14:30:25",
-      "total": 1250.75,
-      "subtotal": 1087.61,
-      "iva": 163.14,
-      "metodoPago": "Tarjeta de Crédito",
-      "cajero": "Juan Pérez"
-    },
-    "productos": {
-      "items": [
-        {
-          "codigo": "PROD001",
-          "nombre": "Laptop HP Pavilion",
-          "descripcion": "Laptop 15.6\" Intel i5 8GB RAM",
-          "precio": 899.99,
-          "cantidad": 1,
-          "subtotal": 899.99,
-          "categoria": "Electrónicos"
-        },
-        {
-          "codigo": "PROD002",
-          "nombre": "Mouse Inalámbrico",
-          "descripcion": "Mouse óptico inalámbrico USB",
-          "precio": 25.50,
-          "cantidad": 2,
-          "subtotal": 51.00,
-          "categoria": "Accesorios"
-        },
-        {
-          "codigo": "PROD003",
-          "nombre": "Teclado Mecánico",
-          "descripcion": "Teclado mecánico RGB switches blue",
-          "precio": 89.99,
-          "cantidad": 1,
-          "subtotal": 89.99,
-          "categoria": "Accesorios"
-        },
-        {
-          "codigo": "PROD004",
-          "nombre": "Monitor 24\"",
-          "descripcion": "Monitor LED 24 pulgadas Full HD",
-          "precio": 199.99,
-          "cantidad": 1,
-          "subtotal": 199.99,
-          "categoria": "Monitores"
-        }
-      ],
-      "totalItems": 5
-    },
-    "empleado": {
-      "nombre": "María González",
-      "id": "EMP001",
-      "departamento": "Ventas",
-      "puesto": "Vendedor Senior"
-    },
-    "cliente": {
-      "nombre": "Carlos Rodríguez",
-      "email": "carlos.rodriguez@email.com",
-      "telefono": "(555) 987-6543",
-      "direccion": "Av. Reforma 456, Col. Centro"
-    },
-    "configuracion": {
-      "moneda": "MXN",
-      "impresora": "EPSON TM-T88VI",
-      "version": "1.0.0"
-    }
-  };
-
+  
   // Usar datos cargados o datos por defecto
   const currentJsonData = jsonData || defaultJsonData;
 
@@ -3981,75 +3619,28 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
 
       {/* Modales de inicio y gestión de proyectos */}
       {showStartupModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">🎫 Editor de Tickets</h2>
-              <p className="text-gray-600">¿Qué te gustaría hacer?</p>
-            </div>
-            <div className="space-y-4">
-              <button
-                onClick={handleNewProject}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                ✨ Crear Nuevo Diseño
-              </button>
-              <button
-                onClick={handleLoadProject}
-                className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium"
-              >
-                📁 Continuar Proyecto Anterior
-              </button>
-            </div>
-          </div>
-        </div>
+        <StartupModal
+          onLoadProject={handleLoadProject}
+          onNewProject={handleNewProject}
+        />
       )}
 
       {showProjectNameModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">📝 Nombre del Proyecto</h2>
-              <p className="text-gray-600">Asigna un nombre a tu proyecto</p>
-            </div>
-            <div className="space-y-4">
-              <input
-                type="text"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                placeholder="Mi Proyecto de Ticket"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                autoFocus
-                onKeyPress={(e) => e.key === 'Enter' && handleProjectNameSubmit()}
-              />
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleProjectNameSubmit}
-                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  ✅ Continuar
-                </button>
-                <button
-                  onClick={handleProjectNameCancel}
-                  className="flex-1 bg-gray-500 text-white py-3 px-4 rounded-lg hover:bg-gray-600 transition-colors font-medium"
-                >
-                  ❌ Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProjectNameModal
+        projectName={projectName}
+        onProjectNameChange={(e)=>setProjectName(e)}
+        onSubmit={handleProjectNameSubmit}
+        onCancel={handleProjectNameCancel}
+        
+        />
       )}
 
       {/* Modal de confirmación de importación exitosa */}
       {showImportSuccessModal && importedProjectInfo && (
         <ImportSuccessModal
           onClose={() => setShowImportSuccessModal(false)}
-          name={importedProjectInfo.name}
-          version={importedProjectInfo.version}
-          elements={importedProjectInfo.elements}
-          createdAt={importedProjectInfo.createdAt}
-          updatedAt={importedProjectInfo.updatedAt}
+          importedProjectInfo={importedProjectInfo}
+        
         />
       )}
 
@@ -4093,8 +3684,8 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
       onDragStart={handleDragStart}
       ticketWidth={ticketWidth}
       widthUnit={widthUnit}
-      onTicketWidthChange={handleTicketWidthChange}
-      onWidthUnitChange={handleWidthUnitChange}
+      onTicketWidthChange={setTicketWidth}
+      onWidthUnitChange={setWidthUnit}
       convertWidth={convertWidth}
      />
 
@@ -4109,11 +3700,19 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         {/* Barra lateral de herramientas */}
         {!sidebarHidden && (
          <Sidebar
-          elements={elements}
+          sidebarWidth={sidebarWidth}
           ticketWidth={ticketWidth}
           widthUnit={widthUnit}
-          calculateContentHeight={calculateContentHeight}
-          updateElement={updateElement}
+          hasCustomJson={hasCustomJson}
+          currentJsonData={jsonData}
+          onTicketWidthChange={setTicketWidth}
+          onWidthUnitChange={setWidthUnit}
+          onJsonUpload={handleJsonUpload}
+          onJsonDragOver={handleJsonDragOver}
+          onJsonDrop={handleJsonDrop}
+          onDragStart={handleDragStart}
+          convertWidth={convertWidth}
+          isConverting={isConverting}
          />
         )}
 
@@ -4128,16 +3727,25 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         {/* Panel de propiedades */}
         {showProperties && selectedElement && (
           <PropertiesPanel
-            element={selectedElement}
-            updateElement={updateElement}
+            propertiesWidth={propertiesWidth}
+            selectedElement={selectedElement}
+            elements={elements}
+            currentJsonData={jsonData}
+            ticketWidth={ticketWidth}
+            widthUnit={widthUnit}
+            showDebug={showDebug}
+            onClose={() => setShowProperties(false)}
+            onUpdateElement={updateElement}
+            onDeleteElement={deleteElement}
+            convertWidth={convertWidth}
+            generateJsonPaths={generateJsonPaths}
           />
         )}
 
         {/* Visor de JSON */}
         {showJsonViewer && (
           <JsonViewer
-            jsonData={jsonData}
-            onClose={() => setShowJsonViewer(false)}
+            currentJsonData={jsonData}
           />
         )}
 
@@ -4150,7 +3758,7 @@ Precio: {{productos.items;precio;codigo=PROD001}}    // Resultado: "899.99"
         selectedElement={selectedElement}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        onClick={handleElementClick}
+        onClick={handleCanvasClick}
         onWheel={handleWheelZoom}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}

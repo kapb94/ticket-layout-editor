@@ -71,7 +71,7 @@ interface ToolbarProps {
   onClearCanvas: () => void;
   onGenerateExample: () => void;
   onExportProject: () => void;
-  onImportProject: () => void;
+  onImportProject: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onChangeProjectName: () => void;
   onDragStart: (e: React.DragEvent, elementType: string) => void;
   ticketWidth: number;
